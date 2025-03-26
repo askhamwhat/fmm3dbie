@@ -201,9 +201,9 @@ c
 
       enddo
 
-      uin(1) = uin(1)/(4*pi)
-      uin(2) = uin(2)/(4*pi)
-      uin(3) = uin(3)/(4*pi)      
+      uin(1) = uin(1)
+      uin(2) = uin(2)
+      uin(3) = uin(3)
 
       sum = 0
       sumrel = 0
@@ -242,7 +242,7 @@ c
       st1(1) = 0
       st1(2) = 0
       st1(3) = 0      
-      call lpcomp_stok_comb_vel(npatches,norders,ixyzs,
+      call stok_comb_vel_eval(npatches,norders,ixyzs,
      1     iptype,npts,srccoefs,srcvals,ndt_in,nt_in,xyz_in,
      2     ipatch_id,uvs_targ,eps,dpars,tracval,st1)
 
@@ -251,15 +251,15 @@ c
       du1(1) = 0
       du1(2) = 0
       du1(3) = 0      
-      call lpcomp_stok_comb_vel(npatches,norders,ixyzs,
+      call stok_comb_vel_eval(npatches,norders,ixyzs,
      1     iptype,npts,srccoefs,srcvals,ndt_in,nt_in,xyz_in,
      2     ipatch_id,uvs_targ,eps,dpars,uval,du1)
 
 
 
-      uin(1) = (st1(1)-du1(1))/(4*pi)
-      uin(2) = (st1(2)-du1(2))/(4*pi)
-      uin(3) = (st1(3)-du1(3))/(4*pi)
+      uin(1) = (st1(1)-du1(1))
+      uin(2) = (st1(2)-du1(2))
+      uin(3) = (st1(3)-du1(3))
 
       sum = 0
       sumrel = 0
@@ -270,9 +270,9 @@ c
 
       i2= 0
       errl2 = sqrt(sum/sumrel)
-      if (errl2 .lt. 1d-3) i2 = 2 
+      if (errl2 .lt. 1d-3) i2 = 1
 
-      call prin2('rel err in Gauss ID --- FMM, adaptive quadrature *',
+      call prin2('rel err in Greens ID --- FMM, adaptive quadrature *',
      1     errl2,1)
 
       ntests=2
