@@ -21,13 +21,18 @@
       real *8 udir(3), uneu(3,10), uavecomp(3), uavetest(3)
       real *8 st2(3), du2(3), uconst(3)
       real *8 v(3), omega(3), r0(3), udiff(3,10), udiff2(3,10)      
-      real *8, allocatable :: uval(:,:), tracval(:,:), soln(:,:)
+      real *8, allocatable :: uval(:,:), tracval(:,:), soln(:,:),
+     1     trac(:,:)
       complex * 16 zpars
+
+      real *8 :: stoklet(3,10), source(3,10)
+      real *8, allocatable :: gradtarg(:,:,:),pottarg(:,:),presstarg(:)
 
       call prini(6,13)
 
       done = 1
       pi = atan(done)*4
+      over4pi = 1d0/(4*pi)
 
 
 c
@@ -75,12 +80,11 @@ c
         xyz_out(3) = 20.1d0
       endif
 
-      norder = 3
+      norder = 8
       npols = (norder+1)*(norder+2)/2
 
       npts = npatches*npols
       allocate(srcvals(12,npts),srccoefs(9,npts))
-      allocate(targs(3,npts))
       ifplot = 0
 
 
@@ -144,6 +148,51 @@ c
 
       enddo
 
+
+c
+c     basic kernel check: Gauss's i.d. with smooth quad at 1 target
+c     
+
+      uin(1) = 0
+      uin(2) = 0
+      uin(3) = 0
+
+      do i = 1,npts
+         call st3d_dlp_vec(9,srcvals(1,i),3,xyz_in,0,dpars,0,zpars,
+     1        0,ipars,dmat)
+
+         u1 = -1d0
+         u2 = -2d0
+         u3 = -3d0
+
+         uin(1) = uin(1) + wts(i)*(
+     2        dmat(1,1)*u1+dmat(1,2)*u2+dmat(1,3)*u3)
+         uin(2) = uin(2) + wts(i)*(
+     2        dmat(2,1)*u1+dmat(2,2)*u2+dmat(2,3)*u3)
+         uin(3) = uin(3) + wts(i)*(
+     2        dmat(3,1)*u1+dmat(3,2)*u2+dmat(3,3)*u3)
+
+
+      enddo
+
+      uin(1) = uin(1)
+      uin(2) = uin(2)
+      uin(3) = uin(3)
+
+      sum = 0
+      sumrel = 0
+
+      do i = 1,3
+         sum = sum + (uin(i)-i)**2
+         sumrel = sumrel + i**2
+      enddo
+
+      i1 = 0
+      errl2 = sqrt(sum/sumrel)
+      if (errl2 .lt. 1d-3) i1 = 1
+      
+      call prin2('rel err in Gauss ID --- direct, smooth quad *',
+     1     errl2,1)
 
 c
 c     basic kernel check: green's i.d. with smooth quad at 1 target
@@ -217,7 +266,7 @@ c
       errl2 = sqrt(sum/sumrel)
       if (errl2 .lt. 1d-3) i1 = 1
       
-      call prin2('rel err in Gauss ID --- direct, smooth quad *',
+      call prin2('rel err in Greens ID --- direct, smooth quad *',
      1     errl2,1)
 
 c
@@ -277,6 +326,89 @@ c
 
       ntests=2
       nsuccess = i1+i2
+
+c     testing stokes S trac against fmm output
+
+      allocate(gradtarg(3,3,npts),pottarg(3,npts),presstarg(npts))
+      allocate(targs(3,npts))
+      allocate(trac(3,npts))
+      
+      ns  = 5
+      do i = 1,ns
+         do j = 1,3
+            source(j,i) = sin(3.0d0*j+i*5)
+            stoklet(j,i) = cos(j*1.0d0+i) 
+         enddo
+      enddo
+
+      do i = 1,npts
+         do j = 1,3
+            targs(j,i) = srcvals(j,i)
+         enddo
+      enddo
+      
+      nd1 = 1
+      ifstoklet=1
+      ifstrslet=0
+      ifppreg=0
+      ifppregtarg=3
+      eps = 1d-6
+      call stfmm3d(nd1,eps,ns,source,ifstoklet,stoklet,
+     1     ifstrslet,strslet,strsvec,ifppreg,tmp,tmp,tmp,
+     2     npts,targs,ifppregtarg,pottarg,presstarg,gradtarg,ier)
+
+      nprint=5
+      do i = 1,nprint
+         do j = 1,3
+            tracval(j,i) = 0
+         enddo
+         do j = 1,ns
+            call st3d_strac_vec(9,source(1,j),3,srcvals(1,i),0,dpars,0,
+     1           zpars,0,ipars,stracmat)
+            tracval(1,i) = tracval(1,i) + stracmat(1,1)*stoklet(1,j)
+     1           + stracmat(1,2)*stoklet(2,j)
+     1           + stracmat(1,3)*stoklet(3,j)
+            tracval(2,i) = tracval(2,i) + stracmat(2,1)*stoklet(1,j)
+     1           + stracmat(2,2)*stoklet(2,j)
+     1           + stracmat(2,3)*stoklet(3,j)
+            tracval(3,i) = tracval(3,i) + stracmat(3,1)*stoklet(1,j)
+     1           + stracmat(3,2)*stoklet(2,j)
+     1           + stracmat(3,3)*stoklet(3,j)
+         enddo
+
+!     recombine fmm values
+         
+         dn1 = srcvals(10,i)
+         dn2 = srcvals(11,i)
+         dn3 = srcvals(12,i)     
+         trac(1,i) = -dn1*presstarg(i) + 
+     1        (dn1*gradtarg(1,1,i)+dn2*gradtarg(2,1,i)
+     2        +dn3*gradtarg(3,1,i)) +
+     3        (dn1*gradtarg(1,1,i)+dn2*gradtarg(1,2,i)
+     4        +dn3*gradtarg(1,3,i))
+         trac(2,i) = -dn2*presstarg(i) + 
+     1        (dn1*gradtarg(1,2,i)+dn2*gradtarg(2,2,i)
+     2        +dn3*gradtarg(3,2,i)) +
+     3        (dn1*gradtarg(2,1,i)+dn2*gradtarg(2,2,i)
+     4        +dn3*gradtarg(2,3,i))
+         trac(3,i) = -dn3*presstarg(i) + 
+     1        (dn1*gradtarg(1,3,i)+dn2*gradtarg(2,3,i)
+     2        +dn3*gradtarg(3,3,i)) + 
+     3        (dn1*gradtarg(3,1,i)+dn2*gradtarg(3,2,i)
+     4        +dn3*gradtarg(3,3,i))
+         
+      enddo
+
+      do i = 1,nprint
+         write(*,*) abs(tracval(1,i)-trac(1,i)*over4pi)/
+     1        abs(tracval(1,i))
+         write(*,*) abs(tracval(2,i)-trac(2,i)*over4pi)/
+     1        abs(tracval(2,i))
+         write(*,*) abs(tracval(3,i)-trac(3,i)*over4pi)/
+     1        abs(tracval(3,i))
+
+      enddo
+
 
       open(unit=33,file='../../print_testres.txt',access='append')
       write(33,'(a,i1,a,i1,a)') 'Successfully completed ',nsuccess,
