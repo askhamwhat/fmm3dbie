@@ -40,7 +40,7 @@ c       igeomtype = 1 => sphere
 c       igeomtype = 2 => stellarator
 c 
       igeomtype = 1
-      if(igeomtype.eq.1) ipars(1) = 1
+      if(igeomtype.eq.1) ipars(1) = 0
       if(igeomtype.eq.2) ipars(1) = 5*2
 
       if(igeomtype.eq.1) then
@@ -113,13 +113,15 @@ c
          enddo
       endif
 
-      norder = 8
+      norder = 4
       npols = (norder+1)*(norder+2)/2
 
       npts = npatches*npols
       allocate(srcvals(12,npts),srccoefs(9,npts))
       allocate(targs(3,npts))
       ifplot = 0
+
+      write(*,*) 'npts = ', npts, norder, npatches
 
       call setup_geom(igeomtype,norder,npatches,ipars, 
      1       srcvals,srccoefs,ifplot,fname)
@@ -203,8 +205,8 @@ c
 
       allocate(soln(3,npts),errs(numit+1))
 
-      eps_gmres = 1d-6
-      eps = 1d-6
+      eps_gmres = 1d-7
+      eps = 1d-7
       
       call stok_s_trac_solver(npatches,norders,ixyzs,
      1     iptype,npts,srccoefs,srcvals,eps,numit,

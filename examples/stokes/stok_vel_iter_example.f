@@ -73,7 +73,7 @@ c
         xyz_out(2) = 3.1d0
         xyz_out(3) = 20.1d0
       endif
-      ifinout = 1
+      ifinout = 0
 
       if(ifinout.eq.0) then
         xyz_src(1) = xyz_out(1) 
@@ -101,6 +101,7 @@ c
       allocate(targs(3,npts))
       ifplot = 0
 
+      write(*,*) 'npts = ', npts, norder, npatches
 
 
       call setup_geom(igeomtype,norder,npatches,ipars, 
