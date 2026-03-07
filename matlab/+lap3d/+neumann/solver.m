@@ -142,12 +142,6 @@ function [sigma, varargout] = solver(S, rhs, eps, opts)
 end    
 %
 %
-
-%-------------------------------------------------
-%
-%%
-%%   Helmholtz dirichlet routines
-%
 %
 %-------------------------------------------------
 

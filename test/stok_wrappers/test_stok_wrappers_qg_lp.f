@@ -368,7 +368,7 @@ c     testing stokes S trac against fmm output
             tracval(j,i) = 0
          enddo
          do j = 1,ns
-            call st3d_strac_vec(9,source(1,j),3,srcvals(1,i),0,dpars,0,
+            call st3d_strac_vec(9,source(1,j),12,srcvals(1,i),0,dpars,0,
      1           zpars,0,ipars,stracmat)
             tracval(1,i) = tracval(1,i) + stracmat(1,1)*stoklet(1,j)
      1           + stracmat(1,2)*stoklet(2,j)
@@ -404,6 +404,76 @@ c     testing stokes S trac against fmm output
          
       enddo
 
+      do i = 1,nprint
+         write(*,*) abs(tracval(1,i)-trac(1,i)*over4pi)/
+     1        abs(tracval(1,i))
+         write(*,*) abs(tracval(2,i)-trac(2,i)*over4pi)/
+     1        abs(tracval(2,i))
+         write(*,*) abs(tracval(3,i)-trac(3,i)*over4pi)/
+     1        abs(tracval(3,i))
+
+      enddo
+
+c     testing stokes S prime (rare) against fmm output
+      
+      ns  = 5
+      do i = 1,ns
+         do j = 1,3
+            source(j,i) = sin(3.0d0*j+i*5)
+            stoklet(j,i) = cos(j*1.0d0+i) 
+         enddo
+      enddo
+
+      do i = 1,npts
+         do j = 1,3
+            targs(j,i) = srcvals(j,i)
+         enddo
+      enddo
+      
+      nd1 = 1
+      ifstoklet=1
+      ifstrslet=0
+      ifppreg=0
+      ifppregtarg=3
+      eps = 1d-6
+      call stfmm3d(nd1,eps,ns,source,ifstoklet,stoklet,
+     1     ifstrslet,strslet,strsvec,ifppreg,tmp,tmp,tmp,
+     2     npts,targs,ifppregtarg,pottarg,presstarg,gradtarg,ier)
+
+      nprint=5
+      do i = 1,nprint
+         do j = 1,3
+            tracval(j,i) = 0
+         enddo
+         do j = 1,ns
+            call st3d_sprime_vec(9,source(1,j),12,srcvals(1,i),
+     1           0,dpars,0,zpars,0,ipars,stracmat)
+            tracval(1,i) = tracval(1,i) + stracmat(1,1)*stoklet(1,j)
+     1           + stracmat(1,2)*stoklet(2,j)
+     1           + stracmat(1,3)*stoklet(3,j)
+            tracval(2,i) = tracval(2,i) + stracmat(2,1)*stoklet(1,j)
+     1           + stracmat(2,2)*stoklet(2,j)
+     1           + stracmat(2,3)*stoklet(3,j)
+            tracval(3,i) = tracval(3,i) + stracmat(3,1)*stoklet(1,j)
+     1           + stracmat(3,2)*stoklet(2,j)
+     1           + stracmat(3,3)*stoklet(3,j)
+         enddo
+
+!     recombine fmm values
+         
+         dn1 = srcvals(10,i)
+         dn2 = srcvals(11,i)
+         dn3 = srcvals(12,i)     
+         trac(1,i) = dn1*gradtarg(1,1,i)+dn2*gradtarg(2,1,i)
+     2        +dn3*gradtarg(3,1,i)
+         trac(2,i) = dn1*gradtarg(1,2,i)+dn2*gradtarg(2,2,i)
+     2        +dn3*gradtarg(3,2,i)
+         trac(3,i) = dn1*gradtarg(1,3,i)+dn2*gradtarg(2,3,i)
+     2        +dn3*gradtarg(3,3,i)
+         
+      enddo
+
+      write(*,*) 'stokes sprime'
       do i = 1,nprint
          write(*,*) abs(tracval(1,i)-trac(1,i)*over4pi)/
      1        abs(tracval(1,i))

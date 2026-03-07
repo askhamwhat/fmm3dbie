@@ -80,7 +80,7 @@ if strcmpi(type,'sdu')
   dy = repmat((du(2,:)).',1,ns);
   dz = repmat((du(3,:)).',1,ns);
   dn = sqrt(dx.*dx+dy.*dy+dz.*dz);
-  submat = (grad(:,:,1).*dx./dn + grad(:,:,2).*dy+...
+  submat = (grad(:,:,1).*dx + grad(:,:,2).*dy+...
       grad(:,:,3).*dz)./dn;
 end
 
@@ -91,7 +91,7 @@ if strcmpi(type,'sdv')
   dy = repmat((dv(2,:)).',1,ns);
   dz = repmat((dv(3,:)).',1,ns);
   dn = sqrt(dx.*dx+dy.*dy+dz.*dz);
-  submat = (grad(:,:,1).*dx./dn + grad(:,:,2).*dy+...
+  submat = (grad(:,:,1).*dx + grad(:,:,2).*dy+...
       grad(:,:,3).*dz)./dn;
 end
 

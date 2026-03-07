@@ -1439,7 +1439,7 @@
       call cpu_time(t2)
 !$      t2 = omp_get_wtime()     
 
-      print *, "done generating near quadrature, now starting gmres"
+      print *, t2-t1, "done generating near quadrature, now starting gmres"
       
       nker = 1
       call lap_comb_dir_solver_guru(npatches, norders, ixyzs, &

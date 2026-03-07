@@ -4,13 +4,14 @@ subroutine permute_12_3d(A, B, n1, n2, n3)
   ! permutes first and second dims of A, writing into B
   implicit none
   ! Dimensions: A(n1, n2, n3), B(n2, n1, n3)
-  integer *8, intent(in) :: n1, n2, n3
+  integer, intent(in) :: n1, n2, n3
   double precision, intent(in)  :: A(n1, n2, n3)
   double precision, intent(out) :: B(n2, n1, n3)
 
-  integer *8 :: i, j, k, ii, jj
-  integer *8, parameter :: block_size = 32
+  integer :: i, j, k, ii, jj
+  integer, parameter :: block_size = 32
 
+  !$OMP PARALLEL DO PRIVATE(k, ii, jj, i, j) SHARED(A, B, n1, n2, n3) IF(n3 > 100)
   do k = 1, n3
      ! Tiled loops for the first two dimensions to optimize cache usage
      do jj = 1, n2, block_size
@@ -26,52 +27,20 @@ subroutine permute_12_3d(A, B, n1, n2, n3)
         end do
      end do
   end do
+  !$OMP END PARALLEL DO
   
 end subroutine permute_12_3d
-
-subroutine permute_23_3d(A, B, n1, n2, n3)
-  implicit none
-
-  ! Dimensions passed as integer *8
-  integer*8, intent(in) :: n1, n2, n3
-
-  ! Arrays with real *8 entries
-  real*8, intent(in)  :: A(n1, n2, n3)
-  real*8, intent(out) :: B(n1, n3, n2)
-
-  ! Loop indices and block parameter as integer *8
-  integer*8 :: j, k, jj, kk
-  integer*8, parameter :: BLOCK_SIZE = 32
-
-  ! Outer loops: iterate over blocks
-  do kk = 1, n3, BLOCK_SIZE
-     do jj = 1, n2, BLOCK_SIZE
-
-        ! Inner loops: iterate within the current block
-        do k = kk, min(kk + BLOCK_SIZE - 1, n3)
-           do j = jj, min(jj + BLOCK_SIZE - 1, n2)
-
-              ! Contiguous copy along the 1st dimension
-              B(1:n1, k, j) = A(1:n1, j, k)
-
-           end do
-        end do
-
-     end do
-  end do
-
-end subroutine permute_23_3d
 
 subroutine transpose(A, B, n1, n2)
   ! transpose A, writing into B
   implicit none
   ! Dimensions: A(n1, n2), B(n2, n1)
-  integer *8, intent(in) :: n1, n2
+  integer, intent(in) :: n1, n2
   double precision, intent(in)  :: A(n1, n2)
   double precision, intent(out) :: B(n2, n1)
 
-  integer *8 :: i, j, k, ii, jj
-  integer *8, parameter :: block_size = 32
+  integer :: i, j, k, ii, jj
+  integer, parameter :: block_size = 32
   
   ! Tiled loops for the first two dimensions to optimize cache usage
   do jj = 1, n2, block_size

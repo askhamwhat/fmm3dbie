@@ -40,7 +40,7 @@ c       igeomtype = 1 => sphere
 c       igeomtype = 2 => stellarator
 c 
       igeomtype = 1
-      if(igeomtype.eq.1) ipars(1) = 0
+      if(igeomtype.eq.1) ipars(1) = 1
       if(igeomtype.eq.2) ipars(1) = 5*2
 
       if(igeomtype.eq.1) then
@@ -121,7 +121,7 @@ c
       allocate(targs(3,npts))
       ifplot = 0
 
-      write(*,*) 'npts = ', npts, norder, npatches
+      write(*,*) 'npts = ', npts, norder, npatches, npols
 
       call setup_geom(igeomtype,norder,npatches,ipars, 
      1       srcvals,srccoefs,ifplot,fname)

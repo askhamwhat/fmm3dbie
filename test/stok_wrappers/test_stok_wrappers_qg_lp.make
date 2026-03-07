@@ -31,7 +31,7 @@ endif
 
 ifeq ($(HOST),linux-gfortran-openmp)
 FC = gfortran
-FFLAGS = -O3 -march=native -funroll-loops -ftree-vectorize -ffast-math --openmp -c -w  
+FFLAGS = -O3 -march=native -funroll-loops -ftree-vectorize -ffast-math --openmp -c -w  -std=legacy
 FLINK = gfortran -w --openmp -o $(EXEC) 
 FEND = -L../../lib -lfmm3d -lblas -llapack
 endif

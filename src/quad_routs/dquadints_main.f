@@ -41,13 +41,13 @@ c
 c  Input arguments:
 c    - eps: real *8
 c        precision/tolerance requested
-c    - istrat: integer *8
+c    - istrat: integer
 c        strategy to be used for computing the integrals
-c    - npatches: integer *8
+c    - npatches: integer
 c        number of patches
-c    - norder: integer *8
+c    - norder: integer
 c        discretization order of patches
-c    - ipoly: integer *8
+c    - ipoly: integer
 c        Type of polynomial to be used
 c        * ipoly = 0, Legendre polynomials
 c        * ipoly = 1, Chebyshev polynomials
@@ -55,35 +55,35 @@ c    - ttype: character
 c        type of number of polynomials used
 c        * ttype = 'F' or 'f', full degree polynomials
 c        * ttype = 'T' or 't', total degree polynomials
-c    - npols: integer *8
+c    - npols: integer
 c        Number of polynomials 
 c        npols = norder*norder if ttype = 'F'
 c        npols = (norder+1)*(norder+2)/2 if ttype = 'T'
 c    - srccoefs: real *8 (9,npols,npatches)
 c        coefficients of basis expansion of xyz coordinates,
 c        dxyz/du, and dxyz/dv
-c    - ndtarg: integer *8
+c    - ndtarg: integer
 c        leading dimension of target info array. Must be at least
 c        3, and those components must correspond to the xyz
 c        coordinates
-c    - ntarg: integer *8
+c    - ntarg: integer
 c        number of targets
 c    - xyztarg: real *8 (ndtarg,ntarg)
 c        target information
-c    - ifp: integer *8
+c    - ifp: integer
 c        flag for whether a set of proxy targets are used for
 c        determining the distance criterion
 c    - xyzproxy: real *8 (3,ntarg)
 c        location of proxy targets for each target, unused if
 c        ifp.ne.1
-c    - itargptr: integer *8(npatches)
+c    - itargptr: integer(npatches)
 c        xyztargs(:,itargptr(i):itargptr(i)+ntargptr(i)-1)
 c        are the relevant set of targets for patch i
-c    - ntargptr: integer *8(npatches)
+c    - ntargptr: integer(npatches)
 c        ntargptr(i) is the number of relevant targets for patch i
-c    - nporder: integer *8
+c    - nporder: integer
 c        order of basis functions to be integrated
-c    - nppols: integer *8
+c    - nppols: integer
 c        number of basis functions to be integrated
 c        * nppols = nporder*nporder, if ttype = 'F'
 c        * nppols = (nporder+1)*(nporder+2)/2, if ttype = 'T'
@@ -92,24 +92,24 @@ c        function handle for evaluating the kernel K
 c        * expected calling sequence,
 c            fker(y,ndtarg,x,ndd,dpars,ndz,zpars,ndi,ipars,f)
 c        The output 'f' is complex for this subroutine
-c    - ndd: integer *8
+c    - ndd: integer
 c        number of real parameters
 c    - dpars: real *8 (ndd)
 c        real parameters for the fker routine
-c    - ndz: integer *8
+c    - ndz: integer
 c        number of complex parameters
 c    - zpars: complex *16 (ndz)
 c        complex parameters for the fker routine
-c    - ndi: integer *8
-c        number of integer *8 parameters
-c    - ipars: integer *8(ndi)
-c        integer *8 parameters for the fker routine
+c    - ndi: integer
+c        number of integer parameters
+c    - ipars: integer(ndi)
+c        integer parameters for the fker routine
 c    - rfac: real *8
 c        parameter for defining refinement criterion, quadrangles
 c        refined if not separated from target by
 c        rfac*r_{t} where r_{t} is radius of enclosing sphere
 c        in quadrangle
-c    - ifmetric: integer *8
+c    - ifmetric: integer
 c        flag for storing and priting the metrics, currently unused
 c 
 c  Output arguments:
@@ -125,36 +125,36 @@ c
 cc     calling sequence variables
 c
       real *8 eps
-      integer *8 istrat
-      integer *8 intype
-      integer *8 npatches,norder,npols
-      integer *8 nporder,nppols
+      integer istrat
+      integer intype
+      integer npatches,norder,npols
+      integer nporder,nppols
       real *8 srccoefs(9,npols,npatches)
       
-      integer *8 ntarg,ndtarg
+      integer ntarg,ndtarg
       real *8 xyztarg(ndtarg,ntarg)
-      integer *8 ifp
+      integer ifp
       real *8 xyzproxy(3,*)
-      integer *8 itargptr(npatches)
-      integer *8 ntargptr(npatches)
+      integer itargptr(npatches)
+      integer ntargptr(npatches)
       
       external fker
-      integer *8 ndd,ndi,ndz
+      integer ndd,ndi,ndz
       real *8 dpars(ndd)
       complex *16 zpars(ndz)
-      integer *8 ipars(ndi)
-      integer *8 nquadmax
+      integer ipars(ndi)
+      integer nquadmax
 
-      integer *8 nqorder
+      integer nqorder
       real *8 rfac
 
-      integer *8 ipoly,ier
+      integer ipoly,ier
       character *1 ttype
 
-      integer *8 ifmetric
+      integer ifmetric
       real *8 rn1
 
-      integer *8 n2
+      integer n2
 
       real *8 cintvals(nppols,ntarg)
       
@@ -197,7 +197,7 @@ c
 c
 c
       subroutine dquadints_vec(eps,istrat,intype,npatches,norder,
-     1     ipoly,ttype,npols,isd,ndsc,
+     1     ipoly,ttype,npols,
      2     srccoefs,ndtarg,ntarg,xyztarg,ifp,
      3     xyzproxy,itargptr,ntargptr,nporder,nppols,
      3     fker,nker,ndd,dpars,ndz,zpars,ndi,ipars,nqorder,nquadmax,
@@ -234,13 +234,13 @@ c
 c  Input arguments:
 c    - eps: real *8
 c        precision/tolerance requested
-c    - istrat: integer *8
+c    - istrat: integer
 c        strategy to be used for computing the integrals
-c    - npatches: integer *8
+c    - npatches: integer
 c        number of patches
-c    - norder: integer *8
+c    - norder: integer
 c        discretization order of patches
-c    - ipoly: integer *8
+c    - ipoly: integer
 c        Type of polynomial to be used
 c        * ipoly = 0, Legendre polynomials
 c        * ipoly = 1, Chebyshev polynomials
@@ -248,47 +248,35 @@ c    - ttype: character
 c        type of number of polynomials used
 c        * ttype = 'F' or 'f', full degree polynomials
 c        * ttype = 'T' or 't', total degree polynomials
-c    - npols: integer *8
+c    - npols: integer
 c        Number of polynomials 
 c        npols = norder*norder if ttype = 'F'
 c        npols = (norder+1)*(norder+2)/2 if ttype = 'T'
-c    - isd: integer *8
-c        * isd = 0, no second der info in srccoefs
-c        * isd = 1, second der info in srccoefs, pass to kern 
-c    - ndsc: integer *8
-c        leading dimension of srccoefs. 9 if isd=0 and 18 if isd=1   
-c    - srccoefs: double precision (ndsc,npts)
-c        basis expansion coefficients of xyz, dxyz/du,
-c        and dxyz/dv on each patch. For each patch
-c        * srccoefs(1:3,i) is xyz info
-c        * srccoefs(4:6,i) is dxyz/du info
-c        * srccoefs(7:9,i) is dxyz/dv info
-c        if (isd .eq. 1) 
-c        * srccoefs(10:12,i) is d2xyz/du2 info
-c        * srccoefs(13:15,i) is d2xyz/duv info
-c        * srccoefs(16:18,i) is d2xyz/dv2 info
-c    - ndtarg: integer *8
+c    - srccoefs: real *8 (9,npols,npatches)
+c        coefficients of basis expansion of xyz coordinates,
+c        dxyz/du, and dxyz/dv
+c    - ndtarg: integer
 c        leading dimension of target info array. Must be at least
 c        3, and those components must correspond to the xyz
 c        coordinates
-c    - ntarg: integer *8
+c    - ntarg: integer
 c        number of targets
 c    - xyztarg: real *8 (ndtarg,ntarg)
 c        target information
-c    - ifp: integer *8
+c    - ifp: integer
 c        flag for whether a set of proxy targets are used for
 c        determining the distance criterion
 c    - xyzproxy: real *8 (3,ntarg)
 c        location of proxy targets for each target, unused if
 c        ifp.ne.1
-c    - itargptr: integer *8(npatches)
+c    - itargptr: integer(npatches)
 c        xyztargs(:,itargptr(i):itargptr(i)+ntargptr(i)-1)
 c        are the relevant set of targets for patch i
-c    - ntargptr: integer *8(npatches)
+c    - ntargptr: integer(npatches)
 c        ntargptr(i) is the number of relevant targets for patch i
-c    - nporder: integer *8
+c    - nporder: integer
 c        order of basis functions to be integrated
-c    - nppols: integer *8
+c    - nppols: integer
 c        number of basis functions to be integrated
 c        * nppols = nporder*nporder, if ttype = 'F'
 c        * nppols = (nporder+1)*(nporder+2)/2, if ttype = 'T'
@@ -297,26 +285,26 @@ c        function handle for evaluating the kernel K
 c        * expected calling sequence,
 c            fker(y,ndtarg,x,ndd,dpars,ndz,zpars,ndi,ipars,f)
 c        The output 'f' is real*8(nker) for this subroutine
-c    - nker: integer *8
+c    - nker: integer
 c        size of output of fker
-c    - ndd: integer *8
+c    - ndd: integer
 c        number of real parameters
 c    - dpars: real *8 (ndd)
 c        real parameters for the fker routine
-c    - ndz: integer *8
+c    - ndz: integer
 c        number of complex parameters
 c    - zpars: complex *16 (ndz)
 c        complex parameters for the fker routine
-c    - ndi: integer *8
-c        number of integer *8 parameters
-c    - ipars: integer *8(ndi)
-c        integer *8 parameters for the fker routine
+c    - ndi: integer
+c        number of integer parameters
+c    - ipars: integer(ndi)
+c        integer parameters for the fker routine
 c    - rfac: real *8
 c        parameter for defining refinement criterion, quadrangles
 c        refined if not separated from target by
 c        rfac*r_{t} where r_{t} is radius of enclosing sphere
 c        in quadrangle
-c    - ifmetric: integer *8
+c    - ifmetric: integer
 c        flag for storing and priting the metrics, currently unused
 c 
 c  Output arguments:
@@ -332,36 +320,36 @@ c
 cc     calling sequence variables
 c
       real *8 eps
-      integer *8 istrat
-      integer *8 intype
-      integer *8 npatches,norder,npols, nker
-      integer *8 nporder,nppols, isd, ndsc
-      real *8 srccoefs(ndsc,npols,npatches)
+      integer istrat
+      integer intype
+      integer npatches,norder,npols, nker
+      integer nporder,nppols
+      real *8 srccoefs(9,npols,npatches)
       
-      integer *8 ntarg,ndtarg
+      integer ntarg,ndtarg
       real *8 xyztarg(ndtarg,ntarg)
-      integer *8 ifp
+      integer ifp
       real *8 xyzproxy(3,*)
-      integer *8 itargptr(npatches)
-      integer *8 ntargptr(npatches)
+      integer itargptr(npatches)
+      integer ntargptr(npatches)
       
       external fker
-      integer *8 ndd,ndi,ndz
+      integer ndd,ndi,ndz
       real *8 dpars(ndd)
       complex *16 zpars(ndz)
-      integer *8 ipars(ndi)
-      integer *8 nquadmax
+      integer ipars(ndi)
+      integer nquadmax
 
-      integer *8 nqorder
+      integer nqorder
       real *8 rfac
 
-      integer *8 ipoly,ier
+      integer ipoly,ier
       character *1 ttype
 
-      integer *8 ifmetric
+      integer ifmetric
       real *8 rn1
 
-      integer *8 n2
+      integer n2
 
       real *8 cintvals(nker,nppols,ntarg)
       
@@ -369,32 +357,35 @@ c
 
       if(istrat.eq.1) then
          rn1 = 0
+
+         
          n2 = 0
-         call dquadints_dist_vec(eps,intype,npatches,norder,ipoly,
-     1        ttype,npols,isd,ndsc,srccoefs,ndtarg,ntarg,xyztarg,
-     2        ifp,xyzproxy,itargptr,ntargptr,nporder,nppols,nquadmax,
-     3        fker,nker,ndd,dpars,ndz,zpars,ndi,ipars,nqorder,rfac,
-     4        cintvals,ier)
+
+         
+          call dquadints_dist_vec(eps,intype,npatches,norder,ipoly,
+     1        ttype,npols,srccoefs,ndtarg,ntarg,xyztarg,ifp,xyzproxy,
+     2        itargptr,ntargptr,nporder,nppols,nquadmax,fker,nker,ndd,
+     3        dpars,ndz,zpars,ndi,ipars,nqorder,rfac,cintvals,ier)
       endif
 
       if(istrat.eq.2) then
-         rn1 = 0
-         n2 = 0
-         call dquadints_adap_vec(eps,intype,npatches,norder,ipoly,
-     1        ttype,npols,isd,ndsc,srccoefs,ndtarg,ntarg,
-     2        xyztarg,itargptr,ntargptr,
+          rn1 = 0
+          n2 = 0
+          call dquadints_adap_vec(eps,intype,npatches,norder,ipoly,
+     1         ttype,
+     1        npols,srccoefs,ndtarg,ntarg,xyztarg,itargptr,ntargptr,
      2        nporder,nppols,nquadmax,fker,nker,ndd,dpars,ndz,zpars,ndi,
      3        ipars,nqorder,cintvals)
       endif
 
       if(istrat.eq.3) then
-         rn1 = 0
-         n2 = 0
-         call dquadints_comb_vec(eps,intype,npatches,norder,ipoly,
-     1        ttype,npols,isd,ndsc,srccoefs,ndtarg,ntarg,xyztarg,ifp,
-     2        xyzproxy,itargptr,
-     2        ntargptr,nporder,nppols,nquadmax,fker,nker,ndd,dpars,
-     3        ndz,zpars,ndi,ipars,nqorder,rfac,cintvals)
+          rn1 = 0
+          n2 = 0
+          call dquadints_comb_vec(eps,intype,npatches,norder,ipoly,
+     1         ttype,
+     1        npols,srccoefs,ndtarg,ntarg,xyztarg,ifp,xyzproxy,itargptr,
+     2         ntargptr,nporder,nppols,nquadmax,fker,nker,ndd,dpars,
+     3         ndz,zpars,ndi,ipars,nqorder,rfac,cintvals)
       endif
       return
       end

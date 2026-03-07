@@ -514,6 +514,61 @@ subroutine st3d_strac_vec(nd,srcinfo,ndt,targinfo, &
   return
 end subroutine st3d_strac_vec
 
+subroutine st3d_strac_vec6(nd,srcinfo,ndt,targinfo, &
+     ndd,dpars,ndz,zk,ndi,ipars,val)
+  implicit real *8 (a-h,o-z)
+  real *8 :: srcinfo(*), targinfo(12),dpars(ndd)
+  integer ipars(ndi)
+  real *8 :: val(6), targ(3), src(3), targnorm(3),over4pi
+  data over4pi/0.07957747154594767d0/
+!f2py intent(in) nd,src,ndt,targ,ndd,dpars,ndz,zk,ndi,ipars
+!f2py intent(out) val
+
+  !
+  ! returns the traction of the Stokes single layer kernel
+  !
+  ! t(S)_ij = T_ijk n_k = -3*(sum_k (targ_k-src_k) n_k)
+  !               *(targ_j-src_j)(targ_i-src_i)/r^5
+  !
+  ! where r = |src-targ| and n is the normal vector at the
+  ! target. The output is given ordered by standard
+  ! linear indexing, ij -> i+(j-1)*3
+
+  src(1)=srcinfo(1)
+  src(2)=srcinfo(2)
+  src(3)=srcinfo(3)
+  targ(1)=targinfo(1)
+  targ(2)=targinfo(2)
+  targ(3)=targinfo(3)
+  targnorm(1)=targinfo(10)
+  targnorm(2)=targinfo(11)
+  targnorm(3)=targinfo(12)
+  
+!  call prin2('srcinfo=*',srcinfo,12)
+
+  dx=targ(1)-src(1)
+  dy=targ(2)-src(2)
+  dz=targ(3)-src(3)
+
+  dprod = dx*targnorm(1) + dy*targnorm(2) + dz*targnorm(3)
+
+  r=sqrt(dx**2+dy**2+dz**2)
+  rinv5 = -3.0d0*dprod*(1.0d0/r)**5*over4pi
+
+  dxdy = dx*dy*rinv5
+  dxdz = dx*dz*rinv5
+  dydz = dy*dz*rinv5
+
+  val(1) = dx*dx*rinv5
+  val(2) = dxdy
+  val(3) = dxdz
+  val(4) = dy*dy*rinv5
+  val(5) = dydz
+  val(6) = dz*dz*rinv5
+
+  return
+end subroutine st3d_strac_vec6
+
 
 subroutine st3d_strac(srcinfo,ndt,targinfo,ndd,dpars, &
      ndz,zk,ndi,ipars,val)
@@ -573,5 +628,137 @@ subroutine st3d_strac(srcinfo,ndt,targinfo,ndd,dpars, &
 
   return
 end subroutine st3d_strac
+
+! non-standard normal derivative of S kernel 
+
+subroutine st3d_sprime_vec(nd,srcinfo,ndt,targinfo, &
+     ndd,dpars,ndz,zk,ndi,ipars,val)
+  implicit real *8 (a-h,o-z)
+  real *8 :: srcinfo(*), targinfo(12),dpars(ndd)
+  integer ipars(ndi)
+  real *8 :: val(9), targ(3), src(3), targnorm(3),over4pi
+  data over4pi/0.07957747154594767d0/
+!f2py intent(in) nd,src,ndt,targ,ndd,dpars,ndz,zk,ndi,ipars
+!f2py intent(out) val
+
+  !
+  ! returns the normal derivative of the Stokes single layer kernel
+  !
+  ! S'_ij = -3(r_n r_j r_i)/r^5
+  !          + (n_i r_j + n_j r_i - delta_{ij} r_n)/r^3
+  !
+  ! where r = |src-targ| and n is the normal vector at the
+  ! target and r_i = targ_i-src_i. The output is given ordered
+  ! by standard linear indexing, ij -> i+(j-1)*3
+
+  src(1)=srcinfo(1)
+  src(2)=srcinfo(2)
+  src(3)=srcinfo(3)
+  targ(1)=targinfo(1)
+  targ(2)=targinfo(2)
+  targ(3)=targinfo(3)
+  targnorm(1)=targinfo(10)
+  targnorm(2)=targinfo(11)
+  targnorm(3)=targinfo(12)
+  
+!  call prin2('srcinfo=*',srcinfo,12)
+
+  dx=targ(1)-src(1)
+  dy=targ(2)-src(2)
+  dz=targ(3)-src(3)
+
+  dprod = dx*targnorm(1) + dy*targnorm(2) + dz*targnorm(3)
+
+  r=sqrt(dx**2+dy**2+dz**2)
+  rinv = 1.0d0/r
+  rinv3 = rinv*rinv*rinv
+  rinv5 = rinv3*rinv*rinv
+  
+  rinv3 = 0.5d0*over4pi*rinv3
+  rinv5 = -3.0d0*0.5d0*dprod*rinv5*over4pi
+
+  dxdy = dx*dy*rinv5 + (targnorm(1)*dy + targnorm(2)*dx)*rinv3
+  dxdz = dx*dz*rinv5 + (targnorm(1)*dz + targnorm(3)*dx)*rinv3
+  dydz = dy*dz*rinv5 + (targnorm(2)*dz + targnorm(3)*dy)*rinv3
+
+  val(1) = dx*dx*rinv5 + (2*targnorm(1)*dx - dprod)*rinv3
+  val(2) = dxdy
+  val(3) = dxdz
+  val(4) = dxdy
+  val(5) = dy*dy*rinv5 + (2*targnorm(2)*dy - dprod)*rinv3
+  val(6) = dydz
+  val(7) = dxdz
+  val(8) = dydz
+  val(9) = dz*dz*rinv5 + (2*targnorm(3)*dz - dprod)*rinv3
+
+  return
+end subroutine st3d_sprime_vec
+
+
+subroutine st3d_sprime(srcinfo,ndt,targinfo,ndd,dpars, &
+     ndz,zk,ndi,ipars,val)
+  implicit real *8 (a-h,o-z)
+  real *8 :: srcinfo(*), targinfo(12),dpars(ndd)
+  integer ipars(ndi)
+  real *8 :: val, targ(3), src(3), targnorm(3), dr(3),over4pi
+  integer :: delta(3,3)
+  data over4pi/0.07957747154594767d0/
+  data delta/1, 0, 0, 0, 1, 0, 0, 0, 1/
+  
+!f2py intent(in) src,ndt,targ,ndd,dpars,ndz,zk,ndi,ipars
+!f2py intent(out) val
+
+  !
+  ! returns one entry of the normal derivative of the Stokes single
+  ! layer kernel
+  !
+  ! S'_ij = -3(r_n r_j r_i)/r^5
+  !          + (n_i r_j + n_j r_i - delta_{ij} r_n)/r^3
+  !
+  ! where r = |src-targ| and n is the normal vector at the
+  ! target and r_i = targ_i-src_i. The output is 
+  ! val=S'_ij, with i = ipars(1), j = ipars(2)
+
+  src(1)=srcinfo(1)
+  src(2)=srcinfo(2)
+  src(3)=srcinfo(3)
+  targ(1)=targinfo(1)
+  targ(2)=targinfo(2)
+  targ(3)=targinfo(3)
+  targnorm(1)=targinfo(10)
+  targnorm(2)=targinfo(11)
+  targnorm(3)=targinfo(12)
+  
+!  call prin2('srcinfo=*',srcinfo,12)
+
+  dx=targ(1)-src(1)
+  dy=targ(2)-src(2)
+  dz=targ(3)-src(3)
+  
+  dprod = dx*targnorm(1) + dy*targnorm(2) + dz*targnorm(3)
+
+  r=sqrt(dx**2+dy**2+dz**2)
+  rinv = 1.0d0/r
+  rinv3 = rinv*rinv*rinv
+  rinv5 = rinv3*rinv*rinv
+  
+  rinv3 = 0.5d0*over4pi*rinv3
+  rinv5 = -3.0d0*0.5d0*dprod*rinv5*over4pi
+
+  dr(1) = dx
+  dr(2) = dy
+  dr(3) = dz
+
+  i = ipars(1)
+  j = ipars(2)
+
+  dxi = dr(i)
+  dxj = dr(j)
+  
+  val = dxi*dxj*rinv5 + &
+       (targnorm(i)*dxj + targnorm(j)*dxi - delta(i,j)*dprod)*rinv3
+
+  return
+end subroutine st3d_sprime
 
 

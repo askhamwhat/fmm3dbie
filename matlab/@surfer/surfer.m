@@ -338,6 +338,7 @@ classdef surfer
         
          [varargout] = plot(obj,varargin);
          a = area(obj);
+         v = volume(obj);
          [srcvals,srccoefs,norders,ixyzs,iptype,wts] = extract_arrays(obj);
          [objout,varargout] = oversample(obj,novers);
          dens_int = interpolate_data(obj, dens, ipatch_ids, uvs_targ);

@@ -126,12 +126,13 @@ subroutine getnearquad_stok_s_trac(npatches, norders, &
   real *8, allocatable :: uvs_targ(:,:), wneartmp(:)
   integer i
   integer ndd, ndz, ndi
-  real *8 :: dpars
+  real *8 :: dpars, t1, t2
   complex *16 :: zpars
-  integer :: ipars
+  integer :: ipars, nker
   procedure (), pointer :: fker
-  external st3d_strac
+  external st3d_strac, st3d_strac_vec6
   integer :: ijloc(2,6), ii, ipv
+  !$ real *8 :: omp_get_wtime
 
 
   ndtarg = 12
@@ -182,7 +183,10 @@ subroutine getnearquad_stok_s_trac(npatches, norders, &
      enddo
      !$OMP END PARALLEL DO
 
-     do i = 1,6   
+     fker => st3d_strac
+     call cpu_time(t1)
+     !$ t1 = omp_get_wtime()
+     do i = 1,1
         call dgetnearquad_ggq_guru(npatches, norders, ixyzs, &
              iptype, npts, srccoefs, srcvals, ndtarg, ntarg, srcvals, &
              ipatch_id, uvs_targ, eps, ipv, fker, ndd, dpars, ndz, &
@@ -195,7 +199,25 @@ subroutine getnearquad_stok_s_trac(npatches, norders, &
         enddo
         !$OMP END PARALLEL DO
      enddo
-  endif
+     call cpu_time(t2)
+     !$ t2 = omp_get_wtime()
+     write(*,*) t2-t1,' time for quad (separately)'
+
+     call cpu_time(t1)
+     !$ t1 = omp_get_wtime()
+
+     fker => st3d_strac_vec6
+     nker = 6
+     call dgetnearquad_ggq_guru_vec(npatches, norders, ixyzs, &
+          iptype, npts, srccoefs, srcvals, ndtarg, ntarg, srcvals, &
+          ipatch_id, uvs_targ, eps, ipv, fker, nker, ndd, dpars, ndz, &
+          zpars, ndi, ijloc(1,i), nnz, row_ptr, col_ind, iquad, &
+          rfac0, nquad, wnear)
+
+     call cpu_time(t2)
+     !$ t2 = omp_get_wtime()
+     write(*,*) t2-t1,' time for quad (together)' 
+ endif
 
 
   return
@@ -640,6 +662,7 @@ subroutine lpcomp_stok_s_trac_addsub(npatches, norders, ixyzs, &
 end subroutine lpcomp_stok_s_trac_addsub
 !
 !
+!
 !        
 subroutine stok_s_trac_solver(npatches, norders, ixyzs, &
      iptype, npts, srccoefs, srcvals, eps, numit, ifinout, &
@@ -882,7 +905,7 @@ subroutine stok_s_trac_solver(npatches, norders, ixyzs, &
 
   iquadtype = 1
 
-  print *, "starting to generate near quadrature"
+  print *, "starting to generate near quadrature", npts, nnz
   call cpu_time(t1)
   !$      t1 = omp_get_wtime()      
 
@@ -892,7 +915,7 @@ subroutine stok_s_trac_solver(npatches, norders, ixyzs, &
   call cpu_time(t2)
   !$      t2 = omp_get_wtime()     
   
-  print *, "done generating near quadrature, now starting gmres"
+  print *, "done generating near quadrature, now starting gmres", t2-t1
   
   call stok_s_trac_solver_guru(npatches, norders, ixyzs, &
        iptype, npts, srccoefs, srcvals, eps, numit, ifinout, &
@@ -1096,3 +1119,5 @@ subroutine stok_s_trac_solver_guru(npatches, norders, ixyzs, &
   
   return
 end subroutine stok_s_trac_solver_guru
+
+!        
