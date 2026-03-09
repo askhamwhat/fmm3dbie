@@ -10,6 +10,10 @@
         do intype=1,2
           do ipoly = 0,1
 
+             write(*,*) 'istrat ', istrat
+             write(*,*) 'intype ', intype
+             write(*,*) 'ipoly  ', ipoly             
+             
             isuccess = 0
             call dquadintrouts_testing(istrat,ifp,intype,ipoly,ttype,
      1         isuccess)

@@ -205,8 +205,10 @@ c
      3  rfac,slp,ifmetric,rn1,n2)
 
       call dquadints_vec(eps,istrat,intype,npatches,norder,ipoly,ttype,
-     1  npols,srccoefs,3,ntarg,xyztarg,ifp,xyztarg,itargptr,ntargptr,
-     2     norder,npols,lslp_vec,nker,0,dpars,1,zpars,0,ipars,nqorder,
+     1     npols,srccoefs,int8_3,ntarg,xyztarg,ifp,xyztarg,itargptr,
+     2     ntargptr,
+     2     norder,npols,lslp_vec,nker,int8_0,dpars,int8_1,zpars,int8_0,
+     3     ipars,nqorder,
      3     nquadmax, rfac,slp_vec,ifmetric,rn1,n2)
 
       
@@ -293,10 +295,11 @@ c
       subroutine lslp_vec(x,ndt,y,ndd,dpars,ndz,zpars,ndi,ipars,f)
 c     a dummy vector-valued kernel of length 3
       implicit real *8 (a-h,o-z)
+      implicit integer *8 (i-n)
       real *8 x(3),y(ndt),dpars(ndd)
       complex *16 zpars(ndz),ima
       data ima/(0.0d0,1.0d0)/
-      integer ipars(ndi)
+      integer*8 ipars(ndi)
       real *8 f(*)
 
       rr = sqrt((x(1)-y(1))**2 + (x(2)-y(2))**2 + (x(3)-y(3))**2)

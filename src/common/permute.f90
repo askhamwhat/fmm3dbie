@@ -4,12 +4,12 @@ subroutine permute_12_3d(A, B, n1, n2, n3)
   ! permutes first and second dims of A, writing into B
   implicit none
   ! Dimensions: A(n1, n2, n3), B(n2, n1, n3)
-  integer, intent(in) :: n1, n2, n3
+  integer *8, intent(in) :: n1, n2, n3
   double precision, intent(in)  :: A(n1, n2, n3)
   double precision, intent(out) :: B(n2, n1, n3)
 
-  integer :: i, j, k, ii, jj
-  integer, parameter :: block_size = 32
+  integer *8 :: i, j, k, ii, jj
+  integer *8, parameter :: block_size = 32
 
   !$OMP PARALLEL DO PRIVATE(k, ii, jj, i, j) SHARED(A, B, n1, n2, n3) IF(n3 > 100)
   do k = 1, n3
@@ -35,12 +35,12 @@ subroutine transpose(A, B, n1, n2)
   ! transpose A, writing into B
   implicit none
   ! Dimensions: A(n1, n2), B(n2, n1)
-  integer, intent(in) :: n1, n2
+  integer *8, intent(in) :: n1, n2
   double precision, intent(in)  :: A(n1, n2)
   double precision, intent(out) :: B(n2, n1)
 
-  integer :: i, j, k, ii, jj
-  integer, parameter :: block_size = 32
+  integer *8 :: i, j, k, ii, jj
+  integer *8, parameter :: block_size = 32
   
   ! Tiled loops for the first two dimensions to optimize cache usage
   do jj = 1, n2, block_size

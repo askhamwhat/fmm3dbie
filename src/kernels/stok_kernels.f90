@@ -518,7 +518,7 @@ subroutine st3d_strac_vec6(nd,srcinfo,ndt,targinfo, &
      ndd,dpars,ndz,zk,ndi,ipars,val)
   implicit real *8 (a-h,o-z)
   real *8 :: srcinfo(*), targinfo(12),dpars(ndd)
-  integer ipars(ndi)
+  integer *8 ipars(ndi)
   real *8 :: val(6), targ(3), src(3), targnorm(3),over4pi
   data over4pi/0.07957747154594767d0/
 !f2py intent(in) nd,src,ndt,targ,ndd,dpars,ndz,zk,ndi,ipars
@@ -635,7 +635,7 @@ subroutine st3d_sprime_vec(nd,srcinfo,ndt,targinfo, &
      ndd,dpars,ndz,zk,ndi,ipars,val)
   implicit real *8 (a-h,o-z)
   real *8 :: srcinfo(*), targinfo(12),dpars(ndd)
-  integer ipars(ndi)
+  integer *8 ipars(ndi)
   real *8 :: val(9), targ(3), src(3), targnorm(3),over4pi
   data over4pi/0.07957747154594767d0/
 !f2py intent(in) nd,src,ndt,targ,ndd,dpars,ndz,zk,ndi,ipars
@@ -699,9 +699,9 @@ subroutine st3d_sprime(srcinfo,ndt,targinfo,ndd,dpars, &
      ndz,zk,ndi,ipars,val)
   implicit real *8 (a-h,o-z)
   real *8 :: srcinfo(*), targinfo(12),dpars(ndd)
-  integer ipars(ndi)
+  integer *8 ipars(ndi)
   real *8 :: val, targ(3), src(3), targnorm(3), dr(3),over4pi
-  integer :: delta(3,3)
+  integer *8 :: delta(3,3)
   data over4pi/0.07957747154594767d0/
   data delta/1, 0, 0, 0, 1, 0, 0, 0, 1/
   

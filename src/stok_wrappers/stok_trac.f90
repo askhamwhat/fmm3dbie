@@ -37,20 +37,20 @@ subroutine getnearquad_stok_s_trac(npatches, norders, &
   !  The recommended parameter for rfac0 is 1.25d0
   !  
   !  Input arguments:
-  !    - npatches: integer
+  !    - npatches: integer *8
   !        number of patches
-  !    - norders: integer(npatches)
+  !    - norders: integer *8(npatches)
   !        order of discretization on each patch 
-  !    - ixyzs: integer(npatches+1)
+  !    - ixyzs: integer *8(npatches+1)
   !        ixyzs(i) denotes the starting location in srccoefs,
   !        and srcvals array corresponding to patch i
-  !    - iptype: integer(npatches)
+  !    - iptype: integer *8(npatches)
   !        type of patch
   !        iptype = 1, triangular patch discretized using RV nodes
   !        iptype = 11, quadrangular patch discretized with GL nodes
   !        iptype = 12, quadrangular patch discretized with Chebyshev 
   !                     nodes
-  !    - npts: integer
+  !    - npts: integer *8
   !        total number of discretization points on the boundary
   !    - srccoefs: real *8 (9,npts)
   !        basis expansion coefficients of xyz, dxyz/du,
@@ -68,20 +68,20 @@ subroutine getnearquad_stok_s_trac(npatches, norders, &
   !          * srcvals(10:12,i) - normals info
   !    - eps: real *8
   !        precision requested
-  !    - iquadtype: integer
+  !    - iquadtype: integer *8
   !        quadrature type
   !          * iquadtype = 1, use ggq for self + adaptive integration
   !            for rest
-  !    - nnz: integer
+  !    - nnz: integer *8
   !        number of source patch-> target interactions in the near field
-  !    - row_ptr: integer(npts+1)
+  !    - row_ptr: integer *8(npts+1)
   !        row_ptr(i) is the pointer
   !        to col_ind array where list of relevant source patches
   !        for target i start
-  !    - col_ind: integer (nnz)
+  !    - col_ind: integer *8 (nnz)
   !        list of source patches relevant for all targets, sorted
   !        by the target number
-  !    - iquad: integer(nnz+1)
+  !    - iquad: integer *8(nnz+1)
   !        location in wnear_ij array where quadrature for col_ind(i)
   !        starts for a single kernel. In this case the different kernels
   !        are matrix entries are located at (m-1)*nquad+iquad(i), where
@@ -89,7 +89,7 @@ subroutine getnearquad_stok_s_trac(npatches, norders, &
   !    - rfac0: real *8
   !        radius parameter for switching to predetermined quadarature
   !        rule        
-  !    - nquad: integer
+  !    - nquad: integer *8
   !        number of near field entries corresponding to each source 
   !        target pair
   !
@@ -112,26 +112,26 @@ subroutine getnearquad_stok_s_trac(npatches, norders, &
   !                       tensor 
   !
   implicit none 
-  integer, intent(in) :: npatches, norders(npatches), npts, nquad
-  integer, intent(in) :: ixyzs(npatches+1), iptype(npatches)
+  integer *8, intent(in) :: npatches, norders(npatches), npts, nquad
+  integer *8, intent(in) :: ixyzs(npatches+1), iptype(npatches)
   real *8, intent(in) :: srccoefs(9,npts), srcvals(12,npts), eps
   real *8, intent(in) :: rfac0
-  integer, intent(in) :: iquadtype
-  integer, intent(in) :: nnz
-  integer, intent(in) :: row_ptr(npts+1), col_ind(nnz), iquad(nnz+1)
+  integer *8, intent(in) :: iquadtype
+  integer *8, intent(in) :: nnz
+  integer *8, intent(in) :: row_ptr(npts+1), col_ind(nnz), iquad(nnz+1)
   real *8, intent(out) :: wnear(6,nquad)
 
-  integer :: ndtarg, ntarg
-  integer, allocatable :: ipatch_id(:)
+  integer *8 :: ndtarg, ntarg
+  integer *8, allocatable :: ipatch_id(:)
   real *8, allocatable :: uvs_targ(:,:), wneartmp(:)
-  integer i
-  integer ndd, ndz, ndi
+  integer *8 i
+  integer *8 ndd, ndz, ndi
   real *8 :: dpars, t1, t2
   complex *16 :: zpars
-  integer :: ipars, nker
+  integer *8 :: ipars, nker
   procedure (), pointer :: fker
   external st3d_strac, st3d_strac_vec6
-  integer :: ijloc(2,6), ii, ipv
+  integer *8 :: ijloc(2,6), ii, ipv
   !$ real *8 :: omp_get_wtime
 
 
@@ -208,11 +208,11 @@ subroutine getnearquad_stok_s_trac(npatches, norders, &
 
      fker => st3d_strac_vec6
      nker = 6
-     call dgetnearquad_ggq_guru_vec(npatches, norders, ixyzs, &
-          iptype, npts, srccoefs, srcvals, ndtarg, ntarg, srcvals, &
-          ipatch_id, uvs_targ, eps, ipv, fker, nker, ndd, dpars, ndz, &
-          zpars, ndi, ijloc(1,i), nnz, row_ptr, col_ind, iquad, &
-          rfac0, nquad, wnear)
+!     call dgetnearquad_ggq_guru_vec(npatches, norders, ixyzs, &
+!          iptype, npts, srccoefs, srcvals, ndtarg, ntarg, srcvals, &
+!          ipatch_id, uvs_targ, eps, ipv, fker, nker, ndd, dpars, ndz, &
+!          zpars, ndi, ijloc(1,i), nnz, row_ptr, col_ind, iquad, &
+!          rfac0, nquad, wnear)
 
      call cpu_time(t2)
      !$ t2 = omp_get_wtime()
@@ -252,19 +252,19 @@ subroutine lpcomp_stok_s_trac_addsub(npatches, norders, ixyzs, &
   !  can directly call existing fmm library
   !
   !  Input arguments:
-  !    - npatches: integer
+  !    - npatches: integer *8
   !        number of patches
-  !    - norders: integer(npatches)
+  !    - norders: integer *8(npatches)
   !        order of discretization on each patch 
-  !    - ixyzs: integer(npatches+1)
+  !    - ixyzs: integer *8(npatches+1)
   !        ixyzs(i) denotes the starting location in srccoefs,
   !        and srcvals array corresponding to patch i
-  !    - iptype: integer(npatches)
+  !    - iptype: integer *8(npatches)
   !        type of patch
   !        iptype = 1, triangular patch discretized using RV nodes
   !        iptype = 11, quadrangular patch discretized with GL nodes
   !        iptype = 12, quadrangular patch discretized with Chebyshev nodes
-  !    - npts: integer
+  !    - npts: integer *8
   !        total number of discretization points on the boundary
   !    - srccoefs: real *8 (9,npts)
   !        basis expansion coefficients of xyz, dxyz/du,
@@ -282,41 +282,41 @@ subroutine lpcomp_stok_s_trac_addsub(npatches, norders, ixyzs, &
   !          * srcvals(10:12,i) - normals info
   !    - eps: real *8
   !        precision requested
-  !    - ndd: integer
+  !    - ndd: integer *8
   !        number of real parameters defining the kernel/
   !        integral representation. should have ndd=0 or 1
   !    - dpars: real *8(ndd)
   !        if ndd=1, dpars(1) is the parameter beta above
-  !    - ndz: integer
+  !    - ndz: integer *8
   !        number of complex parameters defining the kernel/
   !        integral representation (unused in this routine)
   !    - zpars: complex *16(ndz)
   !        complex parameters defining the kernel/
   !        integral represnetation (unused in this routine)
-  !    - ndi: integer
-  !        number of integer parameters defining the kernel/
+  !    - ndi: integer *8
+  !        number of integer *8 parameters defining the kernel/
   !        integral representation (unused in this routine)
-  !    - ipars: integer(ndi)
-  !        integer parameters defining the kernel/
+  !    - ipars: integer *8(ndi)
+  !        integer *8 parameters defining the kernel/
   !        integral represnetation (unused in this routine)
-  !    - nnz: integer
+  !    - nnz: integer *8
   !        number of source patch-> target interactions in the near field
-  !    - row_ptr: integer(npts+1)
+  !    - row_ptr: integer *8(npts+1)
   !        row_ptr(i) is the pointer
   !        to col_ind array where list of relevant source patches
   !        for target i start
-  !    - col_ind: integer (nnz)
+  !    - col_ind: integer *8 (nnz)
   !        list of source patches relevant for all targets, sorted
   !        by the target number
-  !    - iquad: integer(nnz+1)
+  !    - iquad: integer *8(nnz+1)
   !        location in wnear_ij array where quadrature for col_ind(i)
   !        starts for a single kernel. In this case the different kernels
   !        are matrix entries are located at (m-1)*nquad+iquad(i), where
   !        m is the kernel number
-  !    - nquad: integer
+  !    - nquad: integer *8
   !        number of near field entries corresponding to each source target
   !        pair
-  !    - nker: integer
+  !    - nker: integer *8
   !        number of kernels in quadrature correction, must be 6
   !    - wnear: real *8(nker, nquad)
   !        Precomputed near field quadrature for
@@ -335,25 +335,25 @@ subroutine lpcomp_stok_s_trac_addsub(npatches, norders, ixyzs, &
   !                       tensor 
   !        * wnear(6,:) - stores the quadratures for (3,3) entry of the 
   !                       tensor 
-  !    - novers: integer(npatches)
+  !    - novers: integer *8(npatches)
   !        order of discretization for oversampled sources and
   !        density
-  !    - ixyzso: integer(npatches+1)
+  !    - ixyzso: integer *8(npatches+1)
   !        ixyzso(i) denotes the starting location in srcover,
   !        corresponding to patch i
-  !    - nptso: integer
+  !    - nptso: integer *8
   !        total number of oversampled points
   !    - srcover: real *8 (12,nptso)
   !        oversampled set of source information
   !    - whtsover: real *8 (nptso)
   !        smooth quadrature weights at oversampled nodes
-  !    - lwork: integer
+  !    - lwork: integer *8
   !        size of work array (must be npts)
   !    - work: real *8(lwork)
   !        work array
   !        * work(1:npts) stores the smooth quadrature weights for
   !          integration on the discretized surface
-  !    - ndim: integer
+  !    - ndim: integer *8
   !        number of densities per point on the surface,
   !        must be 3 for this routine
   !    - sigma: real *8(3,npts)
@@ -366,39 +366,39 @@ subroutine lpcomp_stok_s_trac_addsub(npatches, norders, ixyzs, &
   
   
   implicit none
-  integer, intent(in) :: npatches, npts
-  integer, intent(in) :: norders(npatches),ixyzs(npatches+1)
-  integer, intent(in) :: iptype(npatches)
+  integer *8, intent(in) :: npatches, npts
+  integer *8, intent(in) :: norders(npatches),ixyzs(npatches+1)
+  integer *8, intent(in) :: iptype(npatches)
   real *8, intent(in) :: srccoefs(9,npts), srcvals(12,npts)
 
   real *8, intent(in) :: eps
       
-  integer, intent(in) :: ndd, ndz, ndi
+  integer *8, intent(in) :: ndd, ndz, ndi
   real *8, intent(in) :: dpars(ndd)
   complex *16, intent(in) :: zpars(ndz)
-  integer, intent(in) :: ipars(ndi)
+  integer *8, intent(in) :: ipars(ndi)
 
-  integer, intent(in) :: nnz, nquad
-  integer, intent(in) :: row_ptr(npts+1), col_ind(nnz)
-  integer, intent(in) :: iquad(nnz+1)
+  integer *8, intent(in) :: nnz, nquad
+  integer *8, intent(in) :: row_ptr(npts+1), col_ind(nnz)
+  integer *8, intent(in) :: iquad(nnz+1)
 
-  integer, intent(in) :: nker
+  integer *8, intent(in) :: nker
   real *8, intent(in) :: wnear(nker,nquad)
 
-  integer, intent(in) :: nptso
-  integer, intent(in) :: ixyzso(npatches+1), novers(npatches)
+  integer *8, intent(in) :: nptso
+  integer *8, intent(in) :: ixyzso(npatches+1), novers(npatches)
   real *8, intent(in) :: srcover(12,nptso), whtsover(nptso)
 
-  integer, intent(in) :: lwork
+  integer *8, intent(in) :: lwork
   real *8, intent(in) :: work(lwork)
 
-  integer, intent(in) :: ndim
+  integer *8, intent(in) :: ndim
 
   real *8, intent(in) :: sigma(ndim,npts)
 
   real *8, intent(out) :: trac(ndim,npts)
   
-  integer norder,npols,nover,npolso
+  integer *8 norder,npols,nover,npolso
   real *8, allocatable :: potsort(:)
 
   real *8, allocatable :: sources(:,:), targvals(:,:)
@@ -406,10 +406,10 @@ subroutine lpcomp_stok_s_trac_addsub(npatches, norders, ixyzs, &
   real *8, allocatable :: stoklet(:,:), strslet(:,:)
   real *8, allocatable :: pottarg(:,:), strsvec(:,:)
   real *8, allocatable :: gradtarg(:,:,:), presstarg(:)  
-  integer ns, nt
+  integer *8 ns, nt
   real *8 alpha, beta
-  integer ifstoklet, ifstrslet
-  integer ifppreg, ifppregtarg
+  integer *8 ifstoklet, ifstrslet
+  integer *8 ifppreg, ifppregtarg
   real *8 tmp(10), val
   real *8 over4pi
 
@@ -417,23 +417,23 @@ subroutine lpcomp_stok_s_trac_addsub(npatches, norders, ixyzs, &
   real *8 sig1, sig2, sig3
   real *8 dn1, dn2, dn3
 
-  integer i, j, jpatch, jquadstart, jstart
+  integer *8 i, j, jpatch, jquadstart, jstart
 
   real *8 pottmp
   real *8, allocatable :: sttmp2(:,:), strstmp2(:,:), strsvec2(:,:)
 
-  integer nmax
+  integer *8 nmax
   real *8 timeinfo(10), t1, t2, omp_get_wtime
 
   real *8, allocatable :: srctmp2(:,:), tracdirect(:,:)
   real *8 thresh, ra
   real *8 rr, rmin
-  integer nss, ii, l, npover
+  integer *8 nss, ii, l, npover
 
-  integer nd, ntarg0, ntarg
-  integer ier, iper
+  integer *8 nd, ntarg0, ntarg
+  integer *8 ier, iper
 
-  integer ndtmp, ndsigma, ndfmm
+  integer *8 ndtmp, ndsigma, ndfmm
 
   real *8 ttot, done, pi
 
@@ -688,19 +688,19 @@ subroutine stok_s_trac_solver(npatches, norders, ixyzs, &
   !
   !
   !  Input arguments:
-  !    - npatches: integer
+  !    - npatches: integer *8
   !        number of patches
-  !    - norders: integer(npatches)
+  !    - norders: integer *8(npatches)
   !        order of discretization on each patch 
-  !    - ixyzs: integer(npatches+1)
+  !    - ixyzs: integer *8(npatches+1)
   !        ixyzs(i) denotes the starting location in srccoefs,
   !        and srcvals array corresponding to patch i
-  !    - iptype: integer(npatches)
+  !    - iptype: integer *8(npatches)
   !        type of patch
   !        iptype = 1, triangular patch discretized using RV nodes
   !        iptype = 11, quadrangular patch discretized with GL nodes
   !        iptype = 12, quadrangular patch discretized with Chebyshev nodes
-  !    - npts: integer
+  !    - npts: integer *8
   !        total number of discretization points on the boundary
   !    - srccoefs: real *8 (9,npts)
   !        basis expansion coefficients of xyz, dxyz/du,
@@ -719,9 +719,9 @@ subroutine stok_s_trac_solver(npatches, norders, ixyzs, &
   !    - eps: real *8
   !        precision requested for computing quadrature and fmm
   !        tolerance
-  !    - numit: integer
+  !    - numit: integer *8
   !        max number of gmres iterations
-  !    - ifinout: integer
+  !    - ifinout: integer *8
   !        ifinout = 0, interior problem
   !        ifinout = 1, exterior problem
   !    - rhs: real *8(3,npts)
@@ -731,7 +731,7 @@ subroutine stok_s_trac_solver(npatches, norders, ixyzs, &
   !      
   !
   !  Output arguments:
-  !    - niter: integer
+  !    - niter: integer *8
   !        number of gmres iterations required for relative residual
   !        to converge to eps_gmres
   !    - errs:  real *8 (numit+1)
@@ -743,48 +743,48 @@ subroutine stok_s_trac_solver(npatches, norders, ixyzs, &
   !        density which solves the velocity problem \sigma
   !				 
   implicit none
-  integer, intent(in) :: npatches, npts
-  integer, intent(in) :: ifinout
-  integer, intent(in) :: norders(npatches), ixyzs(npatches+1)
-  integer, intent(in) :: iptype(npatches)
+  integer *8, intent(in) :: npatches, npts
+  integer *8, intent(in) :: ifinout
+  integer *8, intent(in) :: norders(npatches), ixyzs(npatches+1)
+  integer *8, intent(in) :: iptype(npatches)
   real *8, intent(in) :: srccoefs(9,npts), srcvals(12,npts)
   real *8, intent(in) :: eps, eps_gmres
   real *8, intent(in) :: rhs(3,npts)
-  integer, intent(in) :: numit
+  integer *8, intent(in) :: numit
   real *8, intent(out) :: soln(3,npts)
   real *8, intent(out) :: errs(numit+1)
   real *8, intent(out) :: rres
-  integer, intent(out) :: niter
+  integer *8, intent(out) :: niter
 
-  integer norder, npols
+  integer *8 norder, npols
   real *8, allocatable :: targs(:,:)
-  integer, allocatable :: ipatch_id(:)
+  integer *8, allocatable :: ipatch_id(:)
   real *8, allocatable :: uvs_targ(:,:)
-  integer ndtarg, ntarg
+  integer *8 ndtarg, ntarg
 
 
 
-  integer nover, npolso, nptso
-  integer nnz,nquad
-  integer, allocatable :: row_ptr(:), col_ind(:), iquad(:)
+  integer *8 nover, npolso, nptso
+  integer *8 nnz,nquad
+  integer *8, allocatable :: row_ptr(:), col_ind(:), iquad(:)
   real *8, allocatable :: wnear(:,:)
 
   real *8, allocatable :: srcover(:,:), wover(:)
-  integer, allocatable :: ixyzso(:), novers(:)
+  integer *8, allocatable :: ixyzso(:), novers(:)
 
   real *8, allocatable :: cms(:,:), rads(:), rad_near(:) 
 
-  integer i, j, jpatch, jquadstart, jstart
+  integer *8 i, j, jpatch, jquadstart, jstart
 
-  integer ipars
+  integer *8 ipars
   complex *16 zpars
   real *8 timeinfo(10), t1, t2, omp_get_wtime
 
 
   real *8 ttot, done, pi
   real *8 rfac, rfac0
-  integer iptype_avg, norder_avg
-  integer ikerorder, iquadtype, npts_over
+  integer *8 iptype_avg, norder_avg
+  integer *8 ikerorder, iquadtype, npts_over
 
   !
   !
@@ -792,7 +792,7 @@ subroutine stok_s_trac_solver(npatches, norders, ixyzs, &
   !
   real *8 did, dtmp
   complex *16 ztmp
-  integer nker
+  integer *8 nker
 
 
   done = 1
@@ -951,19 +951,19 @@ subroutine stok_s_trac_solver_guru(npatches, norders, ixyzs, &
   !
   !
   !  Input arguments:
-  !    - npatches: integer
+  !    - npatches: integer *8
   !        number of patches
-  !    - norders: integer(npatches)
+  !    - norders: integer *8(npatches)
   !        order of discretization on each patch 
-  !    - ixyzs: integer(npatches+1)
+  !    - ixyzs: integer *8(npatches+1)
   !        ixyzs(i) denotes the starting location in srccoefs,
   !        and srcvals array corresponding to patch i
-  !    - iptype: integer(npatches)
+  !    - iptype: integer *8(npatches)
   !        type of patch
   !        iptype = 1, triangular patch discretized using RV nodes
   !        iptype = 11, quadrangular patch discretized with GL nodes
   !        iptype = 12, quadrangular patch discretized with Chebyshev nodes
-  !    - npts: integer
+  !    - npts: integer *8
   !        total number of discretization points on the boundary
   !    - srccoefs: real *8 (9,npts)
   !        basis expansion coefficients of xyz, dxyz/du,
@@ -982,41 +982,41 @@ subroutine stok_s_trac_solver_guru(npatches, norders, ixyzs, &
   !    - eps: real *8
   !        precision requested for computing quadrature and fmm
   !        tolerance
-  !    - numit: integer
+  !    - numit: integer *8
   !        max number of gmres iterations
-  !    - ifinout: integer
+  !    - ifinout: integer *8
   !        ifinout = 0, interior problem
   !        ifinout = 1, exterior problem
   !    - rhs: real *8(3,npts)
   !        velocity data
-  !    - nnz: integer
+  !    - nnz: integer *8
   !        number of source patch-> target interactions in the near field
-  !    - row_ptr: integer(npts+1)
+  !    - row_ptr: integer *8(npts+1)
   !        row_ptr(i) is the pointer
   !        to col_ind array where list of relevant source patches
   !        for target i start
-  !    - col_ind: integer (nnz)
+  !    - col_ind: integer *8 (nnz)
   !        list of source patches relevant for all targets, sorted
   !        by the target number
-  !    - iquad: integer(nnz+1)
+  !    - iquad: integer *8(nnz+1)
   !        location in wnear_ij array where quadrature for col_ind(i)
   !        starts for a single kernel. In this case the different kernels
   !        are matrix entries are located at (m-1)*nquad+iquad(i), where
   !        m is the kernel number
-  !    - nquad: integer
+  !    - nquad: integer *8
   !        number of near field entries corresponding to each source target
   !        pair
-  !    - nker: integer
+  !    - nker: integer *8
   !        number of kernels in quadrature correction, must be 6
   !    - wnear: real *8(nker, nquad)
   !        precomputed quadrature corrections 
-  !    - novers: integer(npatches)
+  !    - novers: integer *8(npatches)
   !        order of discretization for oversampled sources and
   !        density
-  !    - ixyzso: integer(npatches+1)
+  !    - ixyzso: integer *8(npatches+1)
   !        ixyzso(i) denotes the starting location in srcover,
   !        corresponding to patch i
-  !    - nptso: integer
+  !    - nptso: integer *8
   !        total number of oversampled points
   !    - srcover: real *8 (12,nptso)
   !        oversampled set of source information
@@ -1026,7 +1026,7 @@ subroutine stok_s_trac_solver_guru(npatches, norders, ixyzs, &
   !        gmres tolerance requested
   !
   !  output
-  !    - niter: integer
+  !    - niter: integer *8
   !        number of gmres iterations required for relative residual
   !        to converge to eps_gmres
   !    - errs:  real *8 (numit+1)
@@ -1039,28 +1039,28 @@ subroutine stok_s_trac_solver_guru(npatches, norders, ixyzs, &
   !				 
   
   implicit none
-  integer, intent(in) :: npatches, npts
-  integer, intent(in) :: norders(npatches), ixyzs(npatches+1)
-  integer, intent(in) :: iptype(npatches)
+  integer *8, intent(in) :: npatches, npts
+  integer *8, intent(in) :: norders(npatches), ixyzs(npatches+1)
+  integer *8, intent(in) :: iptype(npatches)
   real *8, intent(in) :: srccoefs(9,npts), srcvals(12,npts)
   real *8, intent(in) :: eps, eps_gmres
-  integer, intent(in) :: ifinout
+  integer *8, intent(in) :: ifinout
   real *8, intent(in) :: rhs(3,npts)
-  integer, intent(in) :: numit
+  integer *8, intent(in) :: numit
 
   real *8, intent(out) :: errs(numit+1)
   real *8, intent(out) :: rres
-  integer, intent(out) :: niter
+  integer *8, intent(out) :: niter
 
-  integer, intent(in) :: nnz, nquad
-  integer, intent(in) :: row_ptr(npts+1), col_ind(nnz)
-  integer, intent(in) :: iquad(nnz+1)
+  integer *8, intent(in) :: nnz, nquad
+  integer *8, intent(in) :: row_ptr(npts+1), col_ind(nnz)
+  integer *8, intent(in) :: iquad(nnz+1)
 
-  integer, intent(in) :: nker
+  integer *8, intent(in) :: nker
   real *8, intent(in) :: wnear(nker,nquad)
   
-  integer, intent(in) :: nptso
-  integer, intent(in) :: novers(npatches), ixyzso(npatches+1)
+  integer *8, intent(in) :: nptso
+  integer *8, intent(in) :: novers(npatches), ixyzso(npatches+1)
   real *8, intent(in) :: srcover(12,nptso), whtsover(nptso)
 
 
@@ -1068,22 +1068,22 @@ subroutine stok_s_trac_solver_guru(npatches, norders, ixyzs, &
 
   real *8 did
   real *8 dpars, pi, done, rsurf
-  integer ndd_use
+  integer *8 ndd_use
 
   procedure (), pointer :: fker
   external lpcomp_stok_s_trac_addsub
 
-  integer ndd, ndi, ndz, lwork, ndim
+  integer *8 ndd, ndi, ndz, lwork, ndim
   real *8 work
-  integer ipars, nkertmp
+  integer *8 ipars, nkertmp
   complex *16 zpars
 
-  integer ndtarg
+  integer *8 ndtarg
   complex *16 ima
   data ima/(0.0d0,1.0d0)/
   real *8, allocatable :: wts(:)
 
-  integer i
+  integer *8 i
 
   did = (-1)**(ifinout)/2d0
   fker => lpcomp_stok_s_trac_addsub
