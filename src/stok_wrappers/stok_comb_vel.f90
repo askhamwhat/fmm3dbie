@@ -357,16 +357,17 @@
       integer *8, intent(in) :: row_ptr(ntarg+1), col_ind(nnz), iquad(nnz+1)
       real *8, intent(out) :: wnear(6,nquad)
 
-      real *8 alpha, beta
-      real *8, allocatable :: wneartmp(:)
+      real *8 alpha, beta, t1,t2
+      real *8, allocatable :: wneartmp(:), wnear2(:,:)
       integer *8 ndd, ndi, ndz
       complex *16 zpars(1)
       integer *8 ipars(2)
 
-      integer *8 i, ipv, j, ii, ijloc(2,6)
+      integer *8 i, ipv, j, ii, ijloc(2,6), nker
 
       procedure (), pointer :: fker
-      external st3d_comb 
+      external st3d_comb, st3d_comb_vec6
+      !$ real *8 :: omp_get_wtime      
       
 !
 !        initialize the appropriate kernel function
@@ -395,7 +396,7 @@
       ijloc(1,6) = 3
       ijloc(2,6) = 3
 
-      allocate(wneartmp(nquad))
+      allocate(wneartmp(nquad),wnear2(6,nquad))
 
 
       if(iquadtype.eq.1) then
@@ -406,19 +407,45 @@
         enddo
 !$OMP END PARALLEL DO
 
+        call cpu_time(t1)
+        !$ t1 = omp_get_wtime()
+        
+        fker => st3d_comb
         do i = 1,6   
-          call dgetnearquad_ggq_guru(npatches, norders, ixyzs, &
-            iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, &
-            ipatch_id, uvs_targ, eps, ipv, fker, ndd, dpars, ndz, &
-            zpars, ndi, ijloc(1,i), nnz, row_ptr, col_ind, iquad, &
-            rfac0, nquad, wneartmp)
-
-!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(ii)          
-          do ii = 1,nquad
-            wnear(i,ii) = wneartmp(ii)
-          enddo
-!$OMP END PARALLEL DO
+           call dgetnearquad_ggq_guru(npatches, norders, ixyzs, &
+                iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, &
+                ipatch_id, uvs_targ, eps, ipv, fker, ndd, dpars, ndz, &
+                zpars, ndi, ijloc(1,i), nnz, row_ptr, col_ind, iquad, &
+                rfac0, nquad, wneartmp)
+           
+           !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(ii)          
+           do ii = 1,nquad
+              wnear(i,ii) = wneartmp(ii)
+           enddo
+           !$OMP END PARALLEL DO
         enddo
+        call cpu_time(t2)
+        !$ t2 = omp_get_wtime()
+
+        print *, 'time separate ', t2-t1
+
+        call cpu_time(t1)
+        !$ t1 = omp_get_wtime()
+        
+        fker => st3d_comb_vec6       
+        nker = 6
+        call dgetnearquad_ggq_guru_vec(npatches, norders, ixyzs, &
+             iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, &
+             ipatch_id, uvs_targ, eps, ipv, fker, nker, ndd, dpars, ndz, &
+             zpars, ndi, ijloc(1,i), nnz, row_ptr, col_ind, iquad, &
+             rfac0, nquad, wnear)
+
+        call cpu_time(t2)
+        !$ t2 = omp_get_wtime()
+        
+        print *, 'time together ', t2-t1
+
+        
       endif
 
 

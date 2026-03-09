@@ -2144,8 +2144,8 @@ c
 !
 !  temporary variables
 !
-      real *8, allocatable :: xkernvals(:,:,:), xkernvals2(:,:,:)
-      real *8, allocatable :: cint2(:,:,:)
+      real *8, allocatable :: xkernvals(:,:,:)
+      real *8, allocatable :: cint2(:)
       real *8, allocatable :: sigvals(:,:)
       real *8, allocatable :: srcvals(:,:),qwts(:),rsigvals(:,:)
       real *8 alpha,beta
@@ -2154,8 +2154,8 @@ c
       real *8 da
 
       integer *8 i,j,ii,ipatch,itarg,lda,ldb,ldc,l,ncols
-      integer *8 ntarg0,ntargmax
-      real *8 fval
+      integer *8 ntarg0,ntargmax,nrows,ldx
+      real *8 fval(nker)
       character *1 transa,transb
 
       allocate(sigvals(nppols,nqpts))
@@ -2174,49 +2174,50 @@ c
 
 
       ntargmax = maxval(ntargptr(:))
-      allocate(xkernvals(nker,nqpts,ntargmax))
-      allocate(xkernvals2(nqpts,nker,ntargmax))
-      allocate(cint2(nppols,nker,ntargmax))            
-
-      transa = 'N'
-      transb = 'N'
-      alpha = 1.0d0
-      beta = 0.0d0
-      lda = 9
-      ldb = npols
-      ldc = 12
+      allocate(xkernvals(nker,ntargmax,nqpts))
+      ldx = nker*ntargmax
+      allocate(cint2(nppols*nker*ntargmax))            
 
       da = 1
       allocate(srcvals(12,nqpts),qwts(nqpts))
 
 
       do ipatch=1,npatches
-        call dgemm_guru(transa,transb,9,nqpts,npols,alpha,
+
+         transa = 'N'
+         transb = 'N'
+         alpha = 1.0d0
+         beta = 0.0d0
+         lda = 9
+         ldb = npols
+         ldc = 12
+         
+         call dgemm_guru(transa,transb,9,nqpts,npols,alpha,
      1    srccoefs(1,1,ipatch),lda,rsigvals,ldb,beta,srcvals,ldc)
         
         call get_norms_qwts_quad(nqpts,wts,srcvals,da,qwts)
         ntarg0 = ntargptr(ipatch)
+        do j = 1,nqpts
         do itarg = itargptr(ipatch),itargptr(ipatch)+ntarg0-1
-          ii = itarg - itargptr(ipatch)+1
-          do j=1,nqpts
-            call fker(srcvals(1,j),ndtarg,xyztarg(1,itarg),ndd,dpars,
-     1        ndz,zpars,ndi,ipars,xkernvals(1,j,ii))
-            do l=1,nker
-               xkernvals(l,j,ii) = xkernvals(l,j,ii)*qwts(j)
-            enddo
-          enddo
-       enddo
-       call permute_12_3d(xkernvals,xkernvals2,nker,nqpts,ntarg0)
-       ncols = ntarg0*nker
-       call dgemm_guru(transa,transb,nppols,ncols,nqpts,alpha,
-     1      sigvals,nppols,xkernvals2,nqpts,beta,
-     2      cint2,nppols)
-       call permute_12_3d(cint2,cintvals(1,1,itargptr(ipatch)),
-     1      nppols,nker,ntarg0)
+           ii = itarg - itargptr(ipatch)+1
+           call fker(srcvals(1,j),ndtarg,xyztarg(1,itarg),ndd,dpars,
+     1          ndz,zpars,ndi,ipars,fval)
+           xkernvals(:,ii,j) = fval(:)*qwts(j)
+        enddo
+        enddo
+
+        transa = 'N'
+        transb = 'T'        
+        nrows = ntarg0*nker
+        call dgemm_guru(transa,transb,nrows,nppols,nqpts,alpha,
+     1       xkernvals,ldx,sigvals,nppols,beta,
+     2       cint2,nrows)
+        call permute_23_3d(cint2,cintvals(1,1,itargptr(ipatch)),
+     1       nker,ntarg0,nppols)
       enddo
         
 
-      deallocate(xkernvals,xkernvals2,cint2)
+      deallocate(xkernvals,cint2)
       return
       end
 c
@@ -2607,9 +2608,8 @@ c
 c          TODO:  fix this to call mkl blas with single thread
 c
 
-          call dgemm_guru('n','t',nppols,nker,npts,alpha,sigmatmp,
-     1         nppols,fkervals,nker,beta,cint2,nppols)
-          call transpose(cint2,cintvals(1,1,itarg),nppols,nker)
+          call dgemm_guru('n','t',nker,nppols,npts,alpha,fkervals,
+     1         nker,sigmatmp,nppols,beta,cintvals(1,1,itarg),nker)
         enddo
       enddo
 

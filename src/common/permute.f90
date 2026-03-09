@@ -31,6 +31,41 @@ subroutine permute_12_3d(A, B, n1, n2, n3)
   
 end subroutine permute_12_3d
 
+subroutine permute_23_3d(A, B, n1, n2, n3)
+  implicit none
+
+  ! Dimensions passed as integer *8
+  integer*8, intent(in) :: n1, n2, n3
+
+  ! Arrays with real *8 entries
+  real*8, intent(in)  :: A(n1, n2, n3)
+  real*8, intent(out) :: B(n1, n3, n2)
+
+  ! Loop indices and block parameter as integer *8
+  integer*8 :: j, k, jj, kk
+  integer*8, parameter :: BLOCK_SIZE = 32
+
+  ! Outer loops: iterate over blocks
+  !$omp parallel do collapse(2) private(jj, kk, j, k)
+  do kk = 1, n3, BLOCK_SIZE
+     do jj = 1, n2, BLOCK_SIZE
+
+        ! Inner loops: iterate within the current block
+        do k = kk, min(kk + BLOCK_SIZE - 1, n3)
+           do j = jj, min(jj + BLOCK_SIZE - 1, n2)
+
+              ! Contiguous copy along the 1st dimension
+              B(1:n1, k, j) = A(1:n1, j, k)
+
+           end do
+        end do
+
+     end do
+  end do
+  !$omp end parallel do
+
+end subroutine permute_23_3d
+
 subroutine transpose(A, B, n1, n2)
   ! transpose A, writing into B
   implicit none

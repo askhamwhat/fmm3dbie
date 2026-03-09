@@ -325,6 +325,69 @@ subroutine st3d_comb_vec(nd,srcinfo,ndt,targ,ndd,dpars,ndz,zk,ndi, &
 end subroutine st3d_comb_vec
 
 
+subroutine st3d_comb_vec6(srcinfo,ndt,targ,ndd,dpars,ndz,zk,ndi, &
+     ipars,val)  
+!f2py intent(in) nd,src,ndt,targ,ndd,dpars,ndz,zk,ndi,ipars
+!f2py intent(out) val
+  implicit real *8 (a-h,o-z)
+  implicit integer *8 (i-n)
+  real *8 :: srcinfo(12), targ(ndt),dpars(ndd)
+  integer *8 ipars(ndi)
+  complex *16 :: zk
+  real *8 :: val(6)
+
+  real *8 :: src(3), srcnorm(3), alpha, beta,over4pi
+  data over4pi/0.07957747154594767d0/
+  !
+  ! returns the 6 distinct entries of the Stokes combined layer kernel
+  !
+  ! K_ij = alpha G_ij + beta D_ij
+  !
+  ! Where alpha = dpars(1), beta = dpars(2), G_ij is the
+  ! Stokeslet and :
+  !
+  ! D_ij = 3*(sum_k (targ_k-src_k) n_k)
+  !               *(targ_j-src_j)(targ_i-src_i)/r^5
+  !
+  ! where r = |src-targ| and n is the normal vector at 
+  ! the source. The output is ordered as
+  !
+  ! 11 -> 1, 21 -> 2, 31 -> 3, 22 -> 4, 32 -> 5, 33 -> 6
+
+  alpha = dpars(1)
+  beta = dpars(2)
+  
+!  call prin2('srcinfo=*',srcinfo,12)
+
+  dx=targ(1)-srcinfo(1)
+  dy=targ(2)-srcinfo(2)
+  dz=targ(3)-srcinfo(3)
+
+  dprod = dx*srcinfo(10) + dy*srcinfo(11) + dz*srcinfo(12)
+
+  r=sqrt(dx**2+dy**2+dz**2)
+
+  rinv = 1.0d0/r
+  rinv3 = rinv*rinv*rinv
+  rinv5 = rinv3*rinv*rinv
+
+  rinv3 = 0.5d0*rinv3*alpha
+  rinv5 = 3.0d0*dprod*rinv5*beta
+  rinv = 0.5d0*rinv*alpha*over4pi
+
+  dcomb = (rinv3+rinv5)*over4pi
+  
+  val(1) = rinv + dx*dx*dcomb
+  val(2) = dx*dy*dcomb
+  val(3) = dx*dz*dcomb
+  val(4) = rinv + dy*dy*dcomb
+  val(5) = dy*dz*dcomb
+  val(6) = rinv + dz*dz*dcomb
+
+  return
+end subroutine st3d_comb_vec6
+
+
 subroutine st3d_comb(srcinfo,ndt,targ,ndd,dpars,ndz, &
      zk,ndi,ipars,val)
 !f2py intent(in) src,ndt,targ,ndd,dpars,ndz,zk,ndi,ipars
