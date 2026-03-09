@@ -7,11 +7,19 @@
       real *8, allocatable :: srcvals(:,:,:)
       real *8, allocatable :: srccoefs(:,:,:)
       real *8, allocatable :: umatr(:,:),vmatr(:,:),uvs(:,:),wts(:)
-      real *8, allocatable :: slp(:,:)
+      real *8, allocatable :: slp(:,:), slp_vec(:,:,:)
       real *8, allocatable :: slp_ex(:,:)
+
+
+
+      real *8 :: err1s_vec(3)
+      real *8 :: err2s_vec(3)
+      real *8 :: err3s_vec(3)
+      real *8 :: err4s_vec(3)
       integer *8 ipars(10)
       integer *8, allocatable :: iprint(:,:)
       integer *8 itargptr(2),ntargptr(2)
+
       character *1 ttype
 
 
@@ -19,7 +27,7 @@
       complex *16 zpars(3),ima
       integer *8 int8_0,int8_1,int8_2,int8_3
 
-      external lslp
+      external lslp, lslp_vec
 
       character type
 
@@ -32,6 +40,7 @@
       done = 1
       pi = atan(done)*4
 
+      nker = 3
 
       call prini(6,13)
 
@@ -131,15 +140,19 @@ c
       xyztarg(3,3) = -3.0d0/7.0d0
 
 
-      allocate(slp(npols,ntarg),slp_ex(npols,ntarg))
+      allocate(slp(npols,ntarg),slp_ex(npols,ntarg),
+     1     slp_vec(nker,npols,ntarg))
 
       do i=1,ntarg
         do j=1,npols
-          slp(j,i) = 0
-          slp_ex(j,i) = 0
+           slp(j,i) = 0
+           do l = 1,nker
+              slp_vec(l,j,i) = 0
+           enddo
+           slp_ex(j,i) = 0
         enddo
       enddo
-
+      
       eps = 1.0d-7
       nqorder = 20
       nquadmax = 5000
@@ -198,6 +211,13 @@ c
      2  ntargptr,norder,npols,lslp,int8_0,dpars,int8_1,zpars,
      3  int8_0,ipars,nqorder,nquadmax,rfac,slp,ifmetric,rn1,n2)
 
+      call dquadints_vec(eps,istrat,intype,npatches,norder,ipoly,ttype,
+     1     npols,srccoefs,int8_3,ntarg,xyztarg,ifp,xyztarg,itargptr,
+     2     ntargptr,
+     2     norder,npols,lslp_vec,nker,int8_0,dpars,int8_1,zpars,int8_0,
+     3     ipars,nqorder,
+     3     nquadmax, rfac,slp_vec,ifmetric,rn1,n2)
+
       
       errmax = 0.0d0
       do i=1,ntarg
@@ -210,11 +230,24 @@ c
         err3s = abs(slp(nn,i)-slp_ex(nn,i))
         err4s = abs(slp(3,i)-slp_ex(3,i))
 
+        do l = 1,nker
+           err1s_vec(l) = abs(slp_vec(l,1,i)-l*slp_ex(1,i))
+           err2s_vec(l) = abs(slp_vec(l,2,i)-l*slp_ex(2,i))
+           err3s_vec(l) = abs(slp_vec(l,nn,i)-l*slp_ex(nn,i))
+           err4s_vec(l) = abs(slp_vec(l,3,i)-l*slp_ex(3,i))
+        enddo
 
         if(err1s.gt.errmax) errmax = err1s
         if(err2s.gt.errmax) errmax = err2s
         if(err3s.gt.errmax) errmax = err3s
         if(err4s.gt.errmax) errmax = err4s
+
+        do l = 1,nker
+           if(err1s_vec(l).gt.errmax) errmax = err1s_vec(l)
+           if(err2s_vec(l).gt.errmax) errmax = err2s_vec(l)
+           if(err3s_vec(l).gt.errmax) errmax = err3s_vec(l)
+           if(err4s_vec(l).gt.errmax) errmax = err4s_vec(l)
+        enddo
 
         write(*,'(a,2(2x,e11.5))'), "0,0 int=", slp(1,i),slp_ex(1,i)
         write(*,'(a,2(2x,e11.5))'), "1,0 int=", slp(2,i),slp_ex(2,i)
@@ -225,6 +258,12 @@ c
         print *, "1,0 int=",err2s
         print *, "0,1 int=",err3s
         print *, "2,0 int=",err4s
+        print *, ""
+        print *, ""
+        print *, "0,0 int_vec=",maxval(err1s_vec)
+        print *, "1,0 int_vec=",maxval(err2s_vec)
+        print *, "0,1 int_vec=",maxval(err3s_vec)
+        print *, "2,0 int_vec=",maxval(err4s_vec)
         print *, ""
         print *, ""
       enddo
@@ -256,6 +295,26 @@ c
       rr = sqrt((x(1)-y(1))**2 + (x(2)-y(2))**2 + (x(3)-y(3))**2)
 
       f = 1.0d0/rr
+
+      return
+      end
+
+c      
+      subroutine lslp_vec(x,ndt,y,ndd,dpars,ndz,zpars,ndi,ipars,f)
+c     a dummy vector-valued kernel of length 3
+      implicit real *8 (a-h,o-z)
+      implicit integer *8 (i-n)
+      real *8 x(3),y(ndt),dpars(ndd)
+      complex *16 zpars(ndz),ima
+      data ima/(0.0d0,1.0d0)/
+      integer*8 ipars(ndi)
+      real *8 f(*)
+
+      rr = sqrt((x(1)-y(1))**2 + (x(2)-y(2))**2 + (x(3)-y(3))**2)
+
+      f(1) = 1.0d0/rr
+      f(2) = 2.0d0/rr
+      f(3) = 3.0d0/rr
 
       return
       end

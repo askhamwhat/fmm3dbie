@@ -115,7 +115,7 @@ COMOBJS = $(COM)/hkrand.o $(COM)/dotcross3d.o \
 	$(COM)/sort.o $(COM)/sparse_reps.o $(COM)/get_fmm_thresh.o \
 	$(COM)/common_Maxwell.o \
 	$(COM)/rigidbodies.o $(COM)/polytens.o \
-	$(COM)/chebexps.o $(COM)/gmres_routs.o
+	$(COM)/chebexps.o $(COM)/gmres_routs.o $(COM)/permute.o
 
 # Helmholtz wrappers
 HELM = src/helm_wrappers
@@ -140,7 +140,7 @@ EMOBJS = $(EM)/em_mfie_pec.o $(EM)/em_aumfie_pec.o \
 
 # Stokes wrappers
 STOK = src/stok_wrappers
-STOKOBJS = $(STOK)/stok_comb_vel.o 
+STOKOBJS = $(STOK)/stok_comb_vel.o
 
 # Kernels
 KER = src/kernels
@@ -368,10 +368,12 @@ mex-dyn: $(MDYNAMICLIB)
 #
 # testing routines
 #
-test: $(STATICLIB) test/com test/hwrap test/tria test/lwrap test/surf test/quadrature test/quad
+
+test: $(STATICLIB) test/com test/hwrap test/tria test/lwrap test/surf test/quadrature test/quad test/stokwrap
 	cd test/common; ./int2-com
 	cd test/helm_wrappers; ./int2-helm
 	cd test/lap_wrappers; ./int2-lap
+	cd test/stok_wrappers; ./int2-stok
 	cd test/surface_routs; ./int2-surf
 	cd test/tria_routs; ./int2-tria
 	cd test/quad_routs; ./int2-quad
@@ -415,6 +417,9 @@ test/com:
 
 test/hwrap:
 	$(FC) $(FFLAGS) test/helm_wrappers/test_helm_wrappers_qg_lp.f -o test/helm_wrappers/int2-helm lib-static/$(STATICLIB) $(LIBS) 
+
+test/stokwrap:
+	$(FC) $(FFLAGS) test/stok_wrappers/test_stok_wrappers_qg_lp.f -o test/stok_wrappers/int2-stok lib-static/$(STATICLIB) $(LIBS) 
 
 test/lwrap:
 	$(FC) $(FFLAGS) test/lap_wrappers/test_lap_wrappers_qg_lp.f -o test/lap_wrappers/int2-lap lib-static/$(STATICLIB) $(LIBS) 
