@@ -2027,7 +2027,7 @@ c vector versions
 c
 c
       subroutine dquadints_wnodes_vec(npatches,norder,ipoly,ttype,npols,
-     1    srccoefs,ndtarg,ntarg,xyztarg,itargptr,ntargptr,
+     1     isd,ndsc,srccoefs,ndtarg,ntarg,xyztarg,itargptr,ntargptr,
      2    nporder,nppols,fker,nker,ndd,dpars,ndz,zpars,ndi,ipars,
      3    nqpts,qnodes,wts,cintvals)
 c
@@ -2070,9 +2070,21 @@ c    - npols: integer *8
 c        Number of polynomials 
 c        npols = norder*norder if ttype = 'F'
 c        npols = (norder+1)*(norder+2)/2 if ttype = 'T'
-c    - srccoefs: real *8 (9,npols,npatches)
-c        coefficients of basis expansion of xyz coordinates,
-c        dxyz/du, and dxyz/dv
+c    - isd: integer *8
+c        * isd = 0, no second der info in srccoefs/srcvals
+c        * isd = 1, second der info in srccoefs/srcvals, pass to kern 
+c    - ndsc: integer *8
+c        leading dimension of srccoefs. 9 if isd=0 and 18 if isd=1   
+c    - srccoefs: double precision (ndsc,npts)
+c        basis expansion coefficients of xyz, dxyz/du,
+c        and dxyz/dv on each patch. For each patch
+c        * srccoefs(1:3,i) is xyz info
+c        * srccoefs(4:6,i) is dxyz/du info
+c        * srccoefs(7:9,i) is dxyz/dv info
+c        if (isd .eq. 1) 
+c        * srccoefs(10:12,i) is d2xyz/du2 info
+c        * srccoefs(13:15,i) is d2xyz/duv info
+c        * srccoefs(16:18,i) is d2xyz/dv2 info
 c    - ndtarg: integer *8
 c        leading dimension of target info array. Must be at least
 c        3, and those components must correspond to the xyz
@@ -2128,9 +2140,9 @@ c-------------------------------------
 c
       implicit none
       integer *8, intent(in) :: npatches,norder,ipoly,npols,ndtarg,ntarg
-      integer *8, intent(in) :: nker
+      integer *8, intent(in) :: nker,isd,ndsc
       character *1, intent(in) :: ttype
-      real *8, intent(in) :: srccoefs(9,npols,npatches)
+      real *8, intent(in) :: srccoefs(ndsc,npols,npatches)
       real *8, intent(in) :: xyztarg(ndtarg,ntarg)
       integer *8, intent(in) :: itargptr(npatches),ntargptr(npatches)
       integer *8, intent(in) :: nporder,nppols,ndd,ndz,ndi,ipars(ndi),
@@ -2154,13 +2166,14 @@ c
       real *8 da
 
       integer *8 i,j,ii,ipatch,itarg,lda,ldb,ldc,l,ncols
-      integer *8 ntarg0,ntargmax,nrows,ldx
+      integer *8 ntarg0,ntargmax,nrows,ldx,int8_9,ndsv
       real *8 fval(nker)
       character *1 transa,transb
 
       allocate(sigvals(nppols,nqpts))
       allocate(rsigvals(npols,nqpts))
 
+      int8_9 = 9
 c
 c
 c       generate the density values
@@ -2179,7 +2192,9 @@ c
       allocate(cint2(nppols*nker*ntargmax))            
 
       da = 1
-      allocate(srcvals(12,nqpts),qwts(nqpts))
+      ndsv = 12
+      if (isd .eq. 1) ndsv = 30
+      allocate(srcvals(ndsv,nqpts),qwts(nqpts))
 
 
       do ipatch=1,npatches
@@ -2188,14 +2203,15 @@ c
          transb = 'N'
          alpha = 1.0d0
          beta = 0.0d0
-         lda = 9
+         lda = ndsc
          ldb = npols
-         ldc = 12
+         ldc = ndsv
          
-         call dgemm_guru(transa,transb,9,nqpts,npols,alpha,
+         call dgemm_guru(transa,transb,ndsc,nqpts,npols,alpha,
      1    srccoefs(1,1,ipatch),lda,rsigvals,ldb,beta,srcvals,ldc)
         
-        call get_norms_qwts_quad(nqpts,wts,srcvals,da,qwts)
+         call get_srcvals_auxinfo_tri(nqpts,wts,isd,ndsv,srcvals,da,
+     1        qwts)
         ntarg0 = ntargptr(ipatch)
         do j = 1,nqpts
         do itarg = itargptr(ipatch),itargptr(ipatch)+ntarg0-1
@@ -2209,11 +2225,11 @@ c
         transa = 'N'
         transb = 'T'        
         nrows = ntarg0*nker
-        call dgemm_guru(transa,transb,nrows,nppols,nqpts,alpha,
-     1       xkernvals,ldx,sigvals,nppols,beta,
-     2       cint2,nrows)
-        call permute_23_3d(cint2,cintvals(1,1,itargptr(ipatch)),
-     1       nker,ntarg0,nppols)
+        call dgemm_guru(transa,transb,nppols,nrows,nqpts,alpha,
+     1       sigvals,nppols,xkernvals,ldx,beta,
+     2       cint2,nppols)
+        call permute_12_3d(cint2,cintvals(1,1,itargptr(ipatch)),
+     1       nppols,nker,ntarg0)
       enddo
         
 
@@ -2227,7 +2243,7 @@ c
 c
 c
       subroutine dquadints_dist_vec(eps,intype,
-     1     npatches,norder,ipoly,ttype,npols,srccoefs,ndtarg,
+     1     npatches,norder,ipoly,ttype,npols,isd,ndsc,srccoefs,ndtarg,
      2     ntarg,xyztarg,ifp,xyzproxy,
      3     itargptr,ntargptr,nporder,nppols,nquadmax,
      4     fker,nker,ndd,dpars,ndz,zpars,ndi,ipars,
@@ -2288,9 +2304,21 @@ c    - npols: integer *8
 c        Number of polynomials 
 c        npols = (norder+1)*(norder+1) if ttype = 'F'
 c        npols = (norder+1)*(norder+2)/2 if ttype = 'T'
-c    - srccoefs: real *8 (9,npols,npatches)
-c        coefficients of basis expansion of xyz coordinates,
-c        dxyz/du, and dxyz/dv
+c    - isd: integer *8
+c        * isd = 0, no second der info in srccoefs/srcvals
+c        * isd = 1, second der info in srccoefs/srcvals, pass to kern 
+c    - ndsc: integer *8
+c        leading dimension of srccoefs. 9 if isd=0 and 18 if isd=1   
+c    - srccoefs: double precision (ndsc,npts)
+c        basis expansion coefficients of xyz, dxyz/du,
+c        and dxyz/dv on each patch. For each patch
+c        * srccoefs(1:3,i) is xyz info
+c        * srccoefs(4:6,i) is dxyz/du info
+c        * srccoefs(7:9,i) is dxyz/dv info
+c        if (isd .eq. 1) 
+c        * srccoefs(10:12,i) is d2xyz/du2 info
+c        * srccoefs(13:15,i) is d2xyz/duv info
+c        * srccoefs(16:18,i) is d2xyz/dv2 info
 c    - ndtarg: integer *8
 c        leading dimension of target info array. Must be at least
 c        3, and those components must correspond to the xyz
@@ -2366,8 +2394,8 @@ c
       integer *8, intent(in) :: intype,ifp
       integer *8, intent(in) :: npatches,norder,npols,ipoly
       character *1, intent(in) :: ttype
-      integer *8, intent(in) :: nporder,nppols
-      real *8, intent(in) :: srccoefs(9,npols,npatches)
+      integer *8, intent(in) :: nporder,nppols,isd,ndsc
+      real *8, intent(in) :: srccoefs(ndsc,npols,npatches)
       
       integer *8, intent(in) :: ntarg,ndtarg
       real *8, intent(in) :: xyztarg(ndtarg,ntarg)
@@ -2420,7 +2448,7 @@ c
       character *1 transa,transb
       double precision :: alpha,beta
       integer *8 lda,ldb,ldc
-      integer *8 int8_1,int8_2,int8_9      
+      integer *8 int8_1,int8_2,int8_9,ndsv
 
       data ima/(0.0d0,1.0d0)/
 
@@ -2530,7 +2558,9 @@ cc      call prinf('nqpols=*',nqpols,1)
 
       npmax = nquad*nqpols
       allocate(sigvals(npols,npmax))
-      allocate(srcvals(12,npmax),qwts(npmax))
+      ndsv = 12
+      if (isd .eq. 1) ndsv = 30
+      allocate(srcvals(ndsv,npmax),qwts(npmax))
 
       allocate(sigmatmp(nppols,npmax),fkervals(nker,npmax),
      1     cint2(nppols,nker))
@@ -2561,12 +2591,12 @@ c
         transb = 'N'
         alpha = 1
         beta = 0
-        lda = 9
+        lda = ndsc
         ldb = npols
-        ldc = 12
+        ldc = ndsv
 
-        call dgemm_guru(transa,transb,int8_9,npmax,npols,alpha,
-     1     srccoefs(1,1,iquad),lda,sigvals,ldb,beta,srcvals,ldc)
+        call dgemm_guru(transa,transb,ndsc,npmax,npols,alpha,
+     1       srccoefs(1,1,iquad),lda,sigvals,ldb,beta,srcvals,ldc)
 
 
 c
@@ -2574,9 +2604,9 @@ c        compute all the quadrature weights
 c
 
         do i=1,nquad
-          istart = (i-1)*nqpols+1
-          call get_norms_qwts_quad(nqpols,wts,srcvals(1,istart),
-     1        da(i),qwts(istart))
+           istart = (i-1)*nqpols+1
+           call get_srcvals_auxinfo_tri(nqpols,wts,ndsv,
+     1          srcvals(1,istart),da(i),qwts(istart))
         enddo
 
         do itarg=itargptr(iquad),itargptr(iquad)+ntargptr(iquad)-1
@@ -2620,7 +2650,7 @@ c
 c
 c
       subroutine dquadints_adap_vec(eps,intype,
-     1     npatches,norder,ipoly,ttype,npols,srccoefs,ndtarg,
+     1     npatches,norder,ipoly,ttype,npols,isd,ndsc,srccoefs,ndtarg,
      2     ntarg,xyztarg,itargptr,ntargptr,nporder,nppols,
      3     nquadmax,fker,nker,ndd,dpars,ndz,zpars,ndi,
      4     ipars,nqorder,cintvals)
@@ -2679,9 +2709,21 @@ c    - npols: integer *8
 c        Number of polynomials 
 c        npols = norder*norder if ttype = 'F'
 c        npols = (norder+1)*(norder+2)/2 if ttype = 'T'
-c    - srccoefs: real *8 (9,npols,npatches)
-c        coefficients of basis expansion of xyz coordinates,
-c        dxyz/du, and dxyz/dv
+c    - isd: integer *8
+c        * isd = 0, no second der info in srccoefs/srcvals
+c        * isd = 1, second der info in srccoefs/srcvals, pass to kern 
+c    - ndsc: integer *8
+c        leading dimension of srccoefs. 9 if isd=0 and 18 if isd=1   
+c    - srccoefs: double precision (ndsc,npols,npatches)
+c        basis expansion coefficients of xyz, dxyz/du,
+c        and dxyz/dv on each patch. For each patch
+c        * srccoefs(1:3,i) is xyz info
+c        * srccoefs(4:6,i) is dxyz/du info
+c        * srccoefs(7:9,i) is dxyz/dv info
+c        if (isd .eq. 1) 
+c        * srccoefs(10:12,i) is d2xyz/du2 info
+c        * srccoefs(13:15,i) is d2xyz/duv info
+c        * srccoefs(16:18,i) is d2xyz/dv2 info
 c    - ndtarg: integer *8
 c        leading dimension of target info array. Must be at least
 c        3, and those components must correspond to the xyz
@@ -2743,8 +2785,8 @@ c
       real *8 eps
       integer *8 intype
       integer *8 npatches,norder,npols,nker
-      integer *8 nporder,nppols
-      real *8 srccoefs(9,npols,npatches)
+      integer *8 nporder,nppols,isd,ndsc
+      real *8 srccoefs(ndsc,npols,npatches)
       
       integer *8 ntarg,ndtarg
       real *8 xyztarg(ndtarg,ntarg)
@@ -2766,7 +2808,7 @@ c       tree variables
 c
       integer *8 nlmax,ltree
       real *8, allocatable :: tvs(:,:,:),da(:)
-      integer, allocatable :: ichild_start(:)
+      integer *8, allocatable :: ichild_start(:)
       real *8, allocatable :: tvs2(:,:,:),da2(:)
       integer, allocatable :: ichild_start2(:)
 
@@ -2793,7 +2835,7 @@ c
       real *8 alpha,beta
       integer *8 lda,ldb,ldc
       integer *8 nn1,nn2,nn3,nn4,npmax0,nqmaxuse,nqmaxuse0
-      integer *8 int8_1,int8_2,int8_9
+      integer *8 int8_1,int8_2,int8_9,ndsv
 
       int8_1 = 1
       int8_2 = 2
@@ -2867,7 +2909,9 @@ c
       npmax = nquadmax*nqpols
       allocate(sigvals(npols,npmax))
       allocate(sigvalsdens(nppols,npmax))
-      allocate(srcvals(12,npmax),qwts(npmax))
+      ndsv = 12
+      if (isd .eq. 1) ndsv = 30
+      allocate(srcvals(ndsv,npmax),qwts(npmax))
 
 c
 c      current number of quadrangles in the adaptive structure
@@ -2896,13 +2940,14 @@ c
         transb = 'N'
         alpha = 1
         beta = 0
-        lda = 9
+        lda = ndsc
         ldb = npols
-        ldc = 12
+        ldc = ndsv
 
-        call dgemm_guru(transa,transb,int8_9,nqpols,npols,alpha,
+        call dgemm_guru(transa,transb,lda,nqpols,npols,alpha,
      1     srccoefs(1,1,iquad),lda,sigvals,ldb,beta,srcvals,ldc)
-        call get_norms_qwts_quad(nqpols,wts,srcvals,da,qwts)
+        call get_srcvals_auxinfo_tri(nqpols,wts,isd,ndsv,srcvals,da,
+     1       qwts)
 
         do itarg=itargptr(iquad),itargptr(iquad)+ntargptr(iquad)-1
 
@@ -2910,24 +2955,24 @@ c
  1111     continue
           ier = 0
           call dquadadap_vec(eps,nqorder,nqpols,nlmax,nqmaxuse,nquad,
-     1          ichild_start,tvs,da,uvsq,wts, 
-     2          norder,ipoly,ttype,npols,srccoefs(1,1,iquad),
-     3          npmax,srcvals,
-     4          qwts,sigvals,nporder,nppols,sigvalsdens,ndtarg,
-     5          xyztarg(1,itarg),
-     6          fker,nker,ndd,dpars,ndz,zpars,ndi,ipars,
-     7          cintvals(1,1,itarg),ier)
+     1         ichild_start,tvs,da,uvsq,wts, norder,ipoly,ttype,npols,
+     2         isd,ndsc,ndsv,srccoefs(1,1,iquad),
+     3         npmax,srcvals,
+     4         qwts,sigvals,nporder,nppols,sigvalsdens,ndtarg,
+     5         xyztarg(1,itarg),
+     6         fker,nker,ndd,dpars,ndz,zpars,ndi,ipars,
+     7         cintvals(1,1,itarg),ier)
            if(ier.eq.4) then
              nqmaxuse0 = nqmaxuse*4
              npmax0 = nqmaxuse0*nqpols
              allocate(sigvals2(npols,npmax))
              allocate(sigvalsdens2(nppols,npmax))
-             allocate(srcvals2(12,npmax),qwts2(npmax))
+             allocate(srcvals2(ndsv,npmax),qwts2(npmax))
              allocate(ichild_start2(nqmaxuse),tvs2(2,3,nqmaxuse))
              allocate(da2(nqmaxuse))
              nn1 = npols*npmax
              nn2 = nppols*npmax
-             nn3 = 12*npmax
+             nn3 = ndsv*npmax
              nn4 = nquad*6
              call dcopy_guru(nn1,sigvals,int8_1,sigvals2,int8_1)
              call dcopy_guru(nn2,sigvalsdens,int8_1,sigvalsdens2,int8_1)
@@ -2946,7 +2991,7 @@ c
 
              allocate(sigvals(npols,npmax0))
              allocate(sigvalsdens(nppols,npmax0))
-             allocate(srcvals(12,npmax0),qwts(npmax0))
+             allocate(srcvals(ndsv,npmax0),qwts(npmax0))
              allocate(ichild_start(nqmaxuse0),tvs(2,3,nqmaxuse0))
              allocate(da(nqmaxuse0))
 
@@ -2990,12 +3035,13 @@ c
 c
 c
       subroutine dquadadap_vec(eps,m,kpols,nlmax,nqmax,nquad,
-     1             ichild_start,tvs,da,uvsq,wts,
-     2             norder,ipoly,ttype,npols,srccoefs,npmax,srcvals,
-     3             qwts,sigvals,nporder,nppols,sigvalsdens,
-     4             ndtarg,xt,
-     5             fker,nker,ndd,dpars,ndz,zpars,ndi,
-     6             ipars,cintall,ier)
+     1     ichild_start,tvs,da,uvsq,wts,
+     2     norder,ipoly,ttype,npols,isd,ndsc,ndsv,srccoefs,npmax,
+     3     srcvals,
+     3     qwts,sigvals,nporder,nppols,sigvalsdens,
+     4     ndtarg,xt,
+     5     fker,nker,ndd,dpars,ndz,zpars,ndi,
+     6     ipars,cintall,ier)
 c-------------
 c  Task:
 c    This subroutine computes the integrals
@@ -3068,18 +3114,40 @@ c    - npols: integer *8
 c        Number of polynomials 
 c        npols = norder*norder if ttype = 'F'
 c        npols = (norder+1)*(norder+2)/2 if ttype = 'T'
-c    - srccoefs: real *8 (9,npols,npatches)
-c        coefficients of basis expansion of xyz coordinates,
-c        dxyz/du, and dxyz/dv
+c    - isd: integer *8
+c        * isd = 0, no second der info in srccoefs/srcvals
+c        * isd = 1, second der info in srccoefs/srcvals, pass to kern 
+c    - ndsc: integer *8
+c        leading dimension of srccoefs. 9 if isd=0 and 18 if isd=1   
+c    - ndsv: integer *8
+c        leading dimension of srcvals. 12 if isd=0 and 30 if isd=1   
+c    - srccoefs: double precision (ndsc,npols)
+c        basis expansion coefficients of xyz, dxyz/du,
+c        and dxyz/dv on each patch. For each patch
+c        * srccoefs(1:3,i) is xyz info
+c        * srccoefs(4:6,i) is dxyz/du info
+c        * srccoefs(7:9,i) is dxyz/dv info
+c        if (isd .eq. 1) 
+c        * srccoefs(10:12,i) is d2xyz/du2 info
+c        * srccoefs(13:15,i) is d2xyz/duv info
+c        * srccoefs(16:18,i) is d2xyz/dv2 info
 c    - npmax: integer *8
 c        maximum number of discretization nodes in the
 c        current quadtree hierarchy = nqmax*kpols
-c    - srcvals: real *8(12,npmax) - inout
+c    - srcvals: real *8(ndsv,npmax) - inout
 c        geometry info stored on the quad tree hierarchy
 c        srcvals(1:3,:) xyz coordinates
 c        srcvals(4:6,:) dxyz/du
 c        srcvals(7:9,:) dxyz/dv
 c        srcvals(10:12,:) normals
+c        if (isd .eq. 1) 
+c        * srcvals(13:15,i) - d2xyz/du2 info
+c        * srcvals(16:18,i) - d2xyz/duv info
+c        * srcvals(19:21,i) - d2xyz/dv2 info
+c        * srcvals(22,i) - |dxyz/du \times dxyz/dv|
+c        * srcvals(23:25,i) - (11,12,22) entries of I
+c        * srcvals(26:28,i) - (11,12,22) entries of II
+c        * srcvals(29:30,i) - principal curvatures
 c    - qwts: real *8 (npmax) - inout
 c        quadrature weights for integrating smooth functions
 c        on surface
@@ -3139,11 +3207,11 @@ c-------------------
       real *8 da(nqmax)
       real *8 tvs(2,3,nqmax), uvsq(2,kpols),wts(kpols)
       integer *8 nproclist0, nproclist
-      integer *8 idone
-      real *8 srccoefs(9,npols)
+      integer *8 idone, isd, ndsc, ndsv
+      real *8 srccoefs(ndsc,npols)
       real *8 sigvals(npols,npmax)
       real *8 sigvalsdens(nppols,npmax)
-      real *8 srcvals(12,*),qwts(npmax)
+      real *8 srcvals(ndsv,*),qwts(npmax)
       real *8, allocatable :: xkernvals(:,:)
       real *8 xt(ndtarg)
       real *8 cintall(nker,nppols)
@@ -3212,12 +3280,13 @@ c
 
 
       call dquadadap_vec_main(eps,kpols,nlmax,nqmax,nquad,ichild_start,
-     1      tvs,da,uvsq,wts,norder,ipoly,ttype,npols,srccoefs,
-     2      npmax,srcvals,qwts,sigvals,nporder,nppols,
-     3      sigvalsdens,ndtarg,xt,
-     3      fker,nker,ndd,dpars,
-     3      ndz,zpars,ndi,ipars,cvals,istack,nproclist0,
-     4      xkernvals,cintall,ier)
+     1     tvs,da,uvsq,wts,norder,ipoly,ttype,npols,isd,ndsc,ndsv,
+     2     srccoefs,
+     2     npmax,srcvals,qwts,sigvals,nporder,nppols,
+     3     sigvalsdens,ndtarg,xt,
+     3     fker,nker,ndd,dpars,
+     3     ndz,zpars,ndi,ipars,cvals,istack,nproclist0,
+     4     xkernvals,cintall,ier)
       
       return
       end
@@ -3226,12 +3295,13 @@ c
 c
 c
       subroutine dquadadap_vec_main(eps,kpols,nlmax,nqmax,nquad,
-     1      ichild_start,
-     1      tvs,da,uvsq,wts,norder,ipoly,ttype,npols,srccoefs,
-     2      npmax,srcvals,qwts,sigvals,nporder,nppols,sigvalsdens,
-     3      ndtarg,xt,
-     3      fker,nker,ndd,dpars,ndz,
-     3      zpars,ndi,ipars,cvals,istack,nproclist0,xkernvals,
+     1     ichild_start,
+     1     tvs,da,uvsq,wts,norder,ipoly,ttype,npols,isd,ndsc,ndsv,
+     2     srccoefs,
+     2     npmax,srcvals,qwts,sigvals,nporder,nppols,sigvalsdens,
+     3     ndtarg,xt,
+     3     fker,nker,ndd,dpars,ndz,
+     3     zpars,ndi,ipars,cvals,istack,nproclist0,xkernvals,
      4     cintall,ier)
 
 c-------------
@@ -3307,18 +3377,41 @@ c    - npols: integer *8
 c        Number of polynomials 
 c        npols = norder*norder if ttype = 'F'
 c        npols = (norder+1)*(norder+2)/2 if ttype = 'T'
-c    - srccoefs: real *8 (9,npols,npatches)
-c        coefficients of basis expansion of xyz coordinates,
-c        dxyz/du, and dxyz/dv
+c    - isd: integer *8
+c        * isd = 0, no second der info in srccoefs/srcvals
+c        * isd = 1, second der info in srccoefs/srcvals, pass to kern 
+c    - ndsc: integer *8
+c        leading dimension of srccoefs. 9 if isd=0 and 18 if isd=1   
+c    - ndsv: integer *8
+c        leading dimension of srcvals. 12 if isd=0 and 30 if isd=1   
+c    - srccoefs: double precision (ndsc,npols)
+c        basis expansion coefficients of xyz, dxyz/du,
+c        and dxyz/dv on each patch. For each patch
+c        * srccoefs(1:3,i) is xyz info
+c        * srccoefs(4:6,i) is dxyz/du info
+c        * srccoefs(7:9,i) is dxyz/dv info
+c        if (isd .eq. 1) 
+c        * srccoefs(10:12,i) is d2xyz/du2 info
+c        * srccoefs(13:15,i) is d2xyz/duv info
+c        * srccoefs(16:18,i) is d2xyz/dv2 info
 c    - npmax: integer *8
 c        maximum number of discretization nodes in the
 c        current quadtree hierarchy = nqmax*kpols
-c    - srcvals: real *8(12,npmax) - inout
-c        geometry info stored on the quad tree hierarchy
-c        srcvals(1:3,:) xyz coordinates
-c        srcvals(4:6,:) dxyz/du
-c        srcvals(7:9,:) dxyz/dv
-c        srcvals(10:12,:) normals
+c    - srcvals: double precision (ndsv,npmax)
+c        xyz(u,v) and derivative info sampled at the 
+c        discretization nodes on the surface
+c        * srcvals(1:3,i) - xyz info
+c        * srcvals(4:6,i) - dxyz/du info
+c        * srcvals(7:9,i) - dxyz/dv info
+c        * srcvals(10:12,i) - normals info
+c        if (isd .eq. 1) 
+c        * srcvals(13:15,i) - d2xyz/du2 info
+c        * srcvals(16:18,i) - d2xyz/duv info
+c        * srcvals(19:21,i) - d2xyz/dv2 info
+c        * srcvals(22,i) - |dxyz/du \times dxyz/dv|
+c        * srcvals(23:25,i) - (11,12,22) entries of I
+c        * srcvals(26:28,i) - (11,12,22) entries of II
+c        * srcvals(29:30,i) - principal curvatures
 c    - qwts: real *8 (npmax) - inout
 c        quadrature weights for integrating smooth functions
 c        on surface
@@ -3384,20 +3477,22 @@ c-------------------
       
 
       implicit real *8 (a-h,o-z)
+      implicit integer *8 (i-n)
       integer *8 istack(*),nproclist0,nker
       integer *8 ichild_start(nqmax)
       integer *8 nporder,nppols
       real *8 da(nqmax)
       real *8 tvs(2,3,nqmax), uvsq(2,kpols),wts(kpols)
       integer *8  nproclist
-      integer *8 idone
-      real *8 srccoefs(9,npols)
+      integer *8 idone, isd, ndsc, ndsv
+      real *8 srccoefs(ndsc,npols)
       real *8 sigvals(npols,npmax)
       real *8 sigvalsdens(nppols,npmax)
+      real *8 sigvalsdens2(kpols,4*nppols)
       real *8 qwts(npmax)
       real *8 xkernvals(nker,npmax)
       real *8 xt(ndtarg)
-      real *8 srcvals(12,*)
+      real *8 srcvals(ndsv,*)
       real *8 cintall(nker,nppols),fval
       real *8 cvals(nker,nppols,nqmax)
 
@@ -3414,9 +3509,10 @@ c-------------------
       real *8, allocatable :: ctmp(:,:)      
       character *1 transa,transb
       integer *8 lda,ldb,ldc
-      integer *8 int8_1,int8_2,int8_9      
+      integer *8 int8_1,int8_2,int8_9
+      integer *8 nc, ncols, nrows
       external fker
-      
+
       allocate(uvtmp(2,kpols),ctmp(nker,nppols))
 
       int8_1 = 1
@@ -3479,15 +3575,15 @@ c               print *, "Exiting without computing anything"
               transb = 'N'
               alpha = 1
               beta = 0
-              lda = 9
+              lda = ndsc
               ldb = npols
-              ldc = 12
+              ldc = ndsv
 
-              call dgemm_guru(transa,transb,int8_9,kpols,npols,alpha,
+              call dgemm_guru(transa,transb,lda,kpols,npols,alpha,
      1           srccoefs,lda,sigvals(1,istart),ldb,beta,
      2           srcvals(1,istart),ldc)
-              call get_norms_qwts_quad(kpols,wts,srcvals(1,istart),
-     1           rr,qwts(istart))
+              call get_srcvals_auxinfo_tri(kpols,wts,isd,ndsv,
+     1             srcvals(1,istart),da(j),qwts(istart))
 
             enddo
             nquad = nquad+4
@@ -3505,8 +3601,7 @@ c
             do l = 1,nker
                xkernvals(l,jj) = xkernvals(l,jj)*qwts(jj)
             enddo
-          enddo
-cc          call prin2('xkernvals=*',xkernvals(istart+1),kfine)
+         enddo
 
           nfunev = nfunev + kfine
 
@@ -3523,30 +3618,24 @@ c          quadrangle
 c
 cc        add in conquadbutions of children quadrangles
 c
-          do iquadc=iquadc1,iquadc1+3
-             do isig=1,ksigpols
-                do l=1,nker
-                   cvals(l,isig,iquadc) = 0
-                enddo
-             enddo
 
-             istart = (iquadc-1)*kpols
-             do k=1,kpols
-                ii = istart+k
-                do isig=1,ksigpols
-                   do l = 1,nker
-                      cvals(l,isig,iquadc) = cvals(l,isig,iquadc)
-     1                     +xkernvals(l,ii)*sigvalsdens(isig,ii)
-                   enddo
-                enddo
-             enddo
-              
+          istart = (iquadc1-1)*kpols+1
+          nc=4
+          
+          do iquadc=iquadc1,iquadc1+3
+             istart1 = (iquadc-1)*kpols+1             
+             istart0 = (iquadc-iquadc1)*ksigpols+1
+             alpha = 1
+             beta = 0
+             call dgemm_guru('n','t',nker,ksigpols,kpols,alpha,
+     1            xkernvals(1,istart1),nker,sigvalsdens(1,istart1),
+     1            ksigpols,beta,cvals(1,1,iquadc),nker)
+             
              do isig=1,ksigpols
                 do l = 1,nker
                    cintall(l,isig) = cintall(l,isig)
      1                  + cvals(l,isig,iquadc)
                    ctmp(l,isig) = ctmp(l,isig)+cvals(l,isig,iquadc)
-                   
                 enddo
              enddo
           enddo
@@ -3595,7 +3684,7 @@ c
 c
 c
       subroutine dquadints_comb_vec(eps,intype,
-     1     npatches,norder,ipoly,ttype,npols,srccoefs,ndtarg,
+     1     npatches,norder,ipoly,ttype,npols,isd,ndsc,srccoefs,ndtarg,
      2     ntarg,xyztarg,ifp,xyzproxy,
      3     itargptr,ntargptr,nporder,nppols,nquadmax,
      3     fker,nker,ndd,dpars,ndz,zpars,ndi,ipars,
@@ -3655,9 +3744,21 @@ c    - npols: integer *8
 c        Number of polynomials 
 c        npols = norder*norder if ttype = 'F'
 c        npols = (norder+1)*(norder+2)/2 if ttype = 'T'
-c    - srccoefs: real *8 (9,npols,npatches)
-c        coefficients of basis expansion of xyz coordinates,
-c        dxyz/du, and dxyz/dv
+c    - isd: integer *8
+c        * isd = 0, no second der info in srccoefs/srcvals
+c        * isd = 1, second der info in srccoefs/srcvals, pass to kern 
+c    - ndsc: integer *8
+c        leading dimension of srccoefs. 9 if isd=0 and 18 if isd=1   
+c    - srccoefs: double precision (ndsc,npols)
+c        basis expansion coefficients of xyz, dxyz/du,
+c        and dxyz/dv on each patch. For each patch
+c        * srccoefs(1:3,i) is xyz info
+c        * srccoefs(4:6,i) is dxyz/du info
+c        * srccoefs(7:9,i) is dxyz/dv info
+c        if (isd .eq. 1) 
+c        * srccoefs(10:12,i) is d2xyz/du2 info
+c        * srccoefs(13:15,i) is d2xyz/duv info
+c        * srccoefs(16:18,i) is d2xyz/dv2 info
 c    - ndtarg: integer *8
 c        leading dimension of target info array. Must be at least
 c        3, and those components must correspond to the xyz
@@ -3728,8 +3829,8 @@ c
       real *8 eps
       integer *8 intype,ifp
       integer *8 npatches,norder,npols
-      integer *8 nporder,nppols,nker
-      real *8 srccoefs(9,npols,npatches)
+      integer *8 nporder,nppols,nker,ndsc,isd
+      real *8 srccoefs(ndsc,npols,npatches)
       
       integer *8 ntarg,ndtarg
       real *8 xyztarg(ndtarg,ntarg)
@@ -3749,10 +3850,9 @@ c
       integer *8 ipoly
       character *1 ttype
 
-
+      
       real *8 cintvals(nker,nppols,ntarg)
       
-
 c
 cc      temporary variables
 c
@@ -3782,7 +3882,7 @@ c
       real *8, allocatable :: sigmatmp(:,:)
       real *8, allocatable :: xyztargtmp(:,:)
       real *8 xyztmp(3)
-      integer *8 itmp
+      integer *8 itmp, ndsv
 
       real *8, allocatable :: xkernvals(:,:)
       integer *8, allocatable :: istack(:)
@@ -3917,7 +4017,10 @@ c
       npmax = nquadmax*nqpols
       allocate(sigvals(npols,npmax))
       allocate(sigvalsdens(nppols,npmax))
-      allocate(srcvals(12,npmax),qwts(npmax))
+
+      ndsv = 12
+      if (isd .eq. 1) ndsv = 30
+      allocate(srcvals(ndsv,npmax),qwts(npmax))
 
       allocate(xkernvals(nker,npmax))
 
@@ -3947,14 +4050,12 @@ c
         transb = 'N'
         alpha = 1.0d0
         beta = 0.0d0
-        lda = 9
+        lda = ndsc
         ldb = npols
-        ldc = 12
+        ldc = ndsv
 
-        call dgemm_guru(transa,transb,int8_9,npts0,npols,alpha,
+        call dgemm_guru(transa,transb,ndsc,npts0,npols,alpha,
      1     srccoefs(1,1,iquad),lda,sigvals,ldb,beta,srcvals,ldc)
-
-
 
 c
 c        compute all the quadrature weights
@@ -3962,8 +4063,8 @@ c
 
         do i=1,nquad
           istart = (i-1)*nqpols+1
-          call get_norms_qwts_quad(nqpols,wts,srcvals(1,istart),
-     1        da(i),qwts(istart))
+          call get_srcvals_auxinfo_tri(nqpols,wts,isd,ndsv,
+     1         srcvals(1,istart),da(i),qwts(istart))
         enddo
 
         do itarg=itargptr(iquad),itargptr(iquad)+ntargptr(iquad)-1
@@ -4017,7 +4118,7 @@ c
           ier = 0
           call dquadadap_vec_main(eps,nqpols,nlmax,nquadmax,nquad,
      1      ichild_start,tverts,da,uvsq,wts,norder,ipoly,ttype,
-     1      npols,srccoefs(1,1,iquad),
+     1      npols,isd,ndsc,ndsv,srccoefs(1,1,iquad),
      2      npmax,srcvals,qwts,sigvals,nporder,nppols,sigvalsdens,
      3      ndtarg,xyztarg(1,itarg),
      4         fker,nker,ndd,dpars,ndz,zpars,ndi,ipars,cvals,istack,

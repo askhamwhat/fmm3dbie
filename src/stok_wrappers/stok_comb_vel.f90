@@ -363,7 +363,9 @@
       complex *16 zpars(1)
       integer *8 ipars(2)
 
-      integer *8 i, ipv, j, ii, ijloc(2,6), nker
+      integer *8 i, ipv, j, ii, ijloc(2,6), nker, liopts, ldopts
+      integer *8 iopts, info, linfo, isd, ndsc, ndsv
+      real *8 dopts
 
       procedure (), pointer :: fker
       external st3d_comb, st3d_comb_vec6
@@ -411,7 +413,7 @@
         !$ t1 = omp_get_wtime()
         
         fker => st3d_comb
-        do i = 1,6   
+        do i = 1,0
            call dgetnearquad_ggq_guru(npatches, norders, ixyzs, &
                 iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, &
                 ipatch_id, uvs_targ, eps, ipv, fker, ndd, dpars, ndz, &
@@ -434,11 +436,20 @@
         
         fker => st3d_comb_vec6       
         nker = 6
-        call dgetnearquad_ggq_guru_vec(npatches, norders, ixyzs, &
-             iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, &
-             ipatch_id, uvs_targ, eps, ipv, fker, nker, ndd, dpars, ndz, &
-             zpars, ndi, ijloc(1,i), nnz, row_ptr, col_ind, iquad, &
-             rfac0, nquad, wnear)
+        isd = 0
+        ndsc = 9
+        ndsv = 12
+        ldopts = 1
+        dopts = rfac0
+        liopts = 0 ! all defaults 
+        linfo = 1
+        call dgetnearquad_guru(npatches, norders, ixyzs, &
+             iptype, npts, isd, ndsc, ndsv, srccoefs, srcvals, &
+             ndtarg, ntarg, targs, ipatch_id, uvs_targ, eps, ipv, &
+             fker, nker, ndd, dpars, ndz, zpars, ndi, ipars, &
+             liopts, iopts, ldopts, dopts, &
+             nnz, row_ptr, col_ind, iquad, &
+             nquad, wnear, linfo, info)
 
         call cpu_time(t2)
         !$ t2 = omp_get_wtime()

@@ -197,7 +197,7 @@ c
 c
 c
       subroutine dquadints_vec(eps,istrat,intype,npatches,norder,
-     1     ipoly,ttype,npols,
+     1     ipoly,ttype,npols,isd,ndsc,
      2     srccoefs,ndtarg,ntarg,xyztarg,ifp,
      3     xyzproxy,itargptr,ntargptr,nporder,nppols,
      3     fker,nker,ndd,dpars,ndz,zpars,ndi,ipars,nqorder,nquadmax,
@@ -252,9 +252,21 @@ c    - npols: integer *8
 c        Number of polynomials 
 c        npols = norder*norder if ttype = 'F'
 c        npols = (norder+1)*(norder+2)/2 if ttype = 'T'
-c    - srccoefs: real *8 (9,npols,npatches)
-c        coefficients of basis expansion of xyz coordinates,
-c        dxyz/du, and dxyz/dv
+c    - isd: integer *8
+c        * isd = 0, no second der info in srccoefs
+c        * isd = 1, second der info in srccoefs, pass to kern 
+c    - ndsc: integer *8
+c        leading dimension of srccoefs. 9 if isd=0 and 18 if isd=1   
+c    - srccoefs: double precision (ndsc,npts)
+c        basis expansion coefficients of xyz, dxyz/du,
+c        and dxyz/dv on each patch. For each patch
+c        * srccoefs(1:3,i) is xyz info
+c        * srccoefs(4:6,i) is dxyz/du info
+c        * srccoefs(7:9,i) is dxyz/dv info
+c        if (isd .eq. 1) 
+c        * srccoefs(10:12,i) is d2xyz/du2 info
+c        * srccoefs(13:15,i) is d2xyz/duv info
+c        * srccoefs(16:18,i) is d2xyz/dv2 info
 c    - ndtarg: integer *8
 c        leading dimension of target info array. Must be at least
 c        3, and those components must correspond to the xyz
@@ -323,8 +335,8 @@ c
       integer *8 istrat
       integer *8 intype
       integer *8 npatches,norder,npols, nker
-      integer *8 nporder,nppols
-      real *8 srccoefs(9,npols,npatches)
+      integer *8 nporder,nppols, isd, ndsc
+      real *8 srccoefs(ndsc,npols,npatches)
       
       integer *8 ntarg,ndtarg
       real *8 xyztarg(ndtarg,ntarg)
@@ -357,35 +369,32 @@ c
 
       if(istrat.eq.1) then
          rn1 = 0
-
-         
          n2 = 0
-
-         
-          call dquadints_dist_vec(eps,intype,npatches,norder,ipoly,
-     1        ttype,npols,srccoefs,ndtarg,ntarg,xyztarg,ifp,xyzproxy,
-     2        itargptr,ntargptr,nporder,nppols,nquadmax,fker,nker,ndd,
-     3        dpars,ndz,zpars,ndi,ipars,nqorder,rfac,cintvals,ier)
+         call dquadints_dist_vec(eps,intype,npatches,norder,ipoly,
+     1        ttype,npols,isd,ndsc,srccoefs,ndtarg,ntarg,xyztarg,
+     2        ifp,xyzproxy,itargptr,ntargptr,nporder,nppols,nquadmax,
+     3        fker,nker,ndd,dpars,ndz,zpars,ndi,ipars,nqorder,rfac,
+     4        cintvals,ier)
       endif
 
       if(istrat.eq.2) then
-          rn1 = 0
-          n2 = 0
-          call dquadints_adap_vec(eps,intype,npatches,norder,ipoly,
-     1         ttype,
-     1        npols,srccoefs,ndtarg,ntarg,xyztarg,itargptr,ntargptr,
+         rn1 = 0
+         n2 = 0
+         call dquadints_adap_vec(eps,intype,npatches,norder,ipoly,
+     1        ttype,npols,isd,ndsc,srccoefs,ndtarg,ntarg,
+     2        xyztarg,itargptr,ntargptr,
      2        nporder,nppols,nquadmax,fker,nker,ndd,dpars,ndz,zpars,ndi,
      3        ipars,nqorder,cintvals)
       endif
 
       if(istrat.eq.3) then
-          rn1 = 0
-          n2 = 0
-          call dquadints_comb_vec(eps,intype,npatches,norder,ipoly,
-     1         ttype,
-     1        npols,srccoefs,ndtarg,ntarg,xyztarg,ifp,xyzproxy,itargptr,
-     2         ntargptr,nporder,nppols,nquadmax,fker,nker,ndd,dpars,
-     3         ndz,zpars,ndi,ipars,nqorder,rfac,cintvals)
+         rn1 = 0
+         n2 = 0
+         call dquadints_comb_vec(eps,intype,npatches,norder,ipoly,
+     1        ttype,npols,isd,ndsc,srccoefs,ndtarg,ntarg,xyztarg,ifp,
+     2        xyzproxy,itargptr,
+     2        ntargptr,nporder,nppols,nquadmax,fker,nker,ndd,dpars,
+     3        ndz,zpars,ndi,ipars,nqorder,rfac,cintvals)
       endif
       return
       end

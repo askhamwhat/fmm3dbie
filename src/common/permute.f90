@@ -11,7 +11,6 @@ subroutine permute_12_3d(A, B, n1, n2, n3)
   integer *8 :: i, j, k, ii, jj
   integer *8, parameter :: block_size = 32
 
-  !$OMP PARALLEL DO PRIVATE(k, ii, jj, i, j) SHARED(A, B, n1, n2, n3) IF(n3 > 100)
   do k = 1, n3
      ! Tiled loops for the first two dimensions to optimize cache usage
      do jj = 1, n2, block_size
@@ -27,7 +26,6 @@ subroutine permute_12_3d(A, B, n1, n2, n3)
         end do
      end do
   end do
-  !$OMP END PARALLEL DO
   
 end subroutine permute_12_3d
 
@@ -46,7 +44,6 @@ subroutine permute_23_3d(A, B, n1, n2, n3)
   integer*8, parameter :: BLOCK_SIZE = 32
 
   ! Outer loops: iterate over blocks
-  !$omp parallel do collapse(2) private(jj, kk, j, k)
   do kk = 1, n3, BLOCK_SIZE
      do jj = 1, n2, BLOCK_SIZE
 
@@ -62,7 +59,6 @@ subroutine permute_23_3d(A, B, n1, n2, n3)
 
      end do
   end do
-  !$omp end parallel do
 
 end subroutine permute_23_3d
 

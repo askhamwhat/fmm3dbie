@@ -992,6 +992,118 @@ c
       end
 c
 c
+      subroutine get_quadparams_adap0(eps,iptype,norder,
+     1     nqorder,eps_adap,nlev,nqorder_f)
+c
+c
+c
+c         This subroutine returns the quadrature parameters
+c         for computing integrals using adaptive integration
+c
+c        input:
+c          eps - real *8
+c             tolerance
+c          iptype - integer *8
+c             patch type
+c        outputs:
+c          nqorder - integer *8
+c             order of XG nodes to use on each triangle in the
+c             adaptive integration strategy
+c          eps_adap - real *8
+c             stopping criterion for adaptive integration
+c          nlev - integer *8
+c             number of uniform levels for using oversampled 
+c             quadrature in the near-field
+c          nqorder_f - order of XG nodes to use in each of
+c            triangles when using oversampled quadrature in
+c            the near field
+c
+      implicit none
+      real *8 eps,eps_adap,eps0
+      integer *8 norder,nqorder,i,iprec
+      integer *8 nlev,nqorder_f,iptype
+      
+
+      iprec = 0
+      if(eps.lt.0.5d-2) iprec = 1
+      if(eps.lt.0.5d-3) iprec = 2
+      if(eps.lt.0.5d-6) iprec = 3
+      if(eps.lt.0.5d-9) iprec = 4
+
+
+      nqorder = 10
+      eps_adap = eps
+      nqorder_f = 8 
+      nlev = 1
+
+      if(norder.ge.4) then
+        if(iprec.eq.0) then
+          nqorder = 12
+          eps_adap = 1.0d-2
+          nqorder_f = 8
+        endif
+
+        if(iprec.eq.1) then
+          nqorder= 12
+          eps_adap = 0.2d-2
+          nqorder_f = 10
+        endif
+
+        if(iprec.eq.2) then
+          nqorder = 16
+          eps_adap = 0.1d-4
+          nqorder_f = 16
+        endif
+
+        if(iprec.eq.3) then
+          nqorder = 22
+          eps_adap = 7.0d-8
+          nqorder_f = 22
+        endif
+
+        if(iprec.eq.4) then
+          nqorder = 30
+          eps_adap = 3.0d-10
+          nqorder_f = 30
+        endif
+      else
+        if(iprec.eq.0) then
+          nqorder = 8
+          eps_adap = 1.0d-2
+          nqorder_f = 4
+        endif
+
+        if(iprec.eq.1) then
+          nqorder= 8
+          eps_adap = 0.2d-2
+          nqorder_f = 6
+        endif
+
+        if(iprec.eq.2) then
+          nqorder = 12
+          eps_adap = 0.1d-4
+          nqorder_f = 12
+        endif
+
+        if(iprec.eq.3) then
+          nqorder = 16
+          eps_adap = 3.0d-8
+          nqorder_f = 20
+        endif
+
+        if(iprec.eq.4) then
+          nqorder = 24
+          eps_adap = 2.0d-10
+          nqorder_f = 26
+        endif
+      endif
+
+
+
+      return
+      end
+c
+c
 c
 c
 c
