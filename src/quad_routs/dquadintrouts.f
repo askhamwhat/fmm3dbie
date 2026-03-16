@@ -2166,7 +2166,7 @@ c
       real *8 da
 
       integer *8 i,j,ii,ipatch,itarg,lda,ldb,ldc,l,ncols
-      integer *8 ntarg0,ntargmax,nrows,ldx,int8_9,ndsv
+      integer *8 ntarg0,ntargmax,nrows,ldx,int8_9,ndsv,ndata
       real *8 fval(nker)
       character *1 transa,transb
 
@@ -2192,8 +2192,13 @@ c
       allocate(cint2(nppols*nker*ntargmax))            
 
       da = 1
-      ndsv = 12
-      if (isd .eq. 1) ndsv = 30
+      if (isd .eq. 1) then
+         ndata = ndsc - 18
+         ndsv = 30 + ndata
+      else
+         ndata = ndsc - 9
+         ndsv = 12 + ndata
+      endif
       allocate(srcvals(ndsv,nqpts),qwts(nqpts))
 
 
@@ -2210,7 +2215,7 @@ c
          call dgemm_guru(transa,transb,ndsc,nqpts,npols,alpha,
      1    srccoefs(1,1,ipatch),lda,rsigvals,ldb,beta,srcvals,ldc)
         
-         call get_srcvals_auxinfo_tri(nqpts,wts,isd,ndsv,srcvals,da,
+         call get_srcvals_auxinfo(nqpts,wts,isd,ndata,ndsv,srcvals,da,
      1        qwts)
         ntarg0 = ntargptr(ipatch)
         do j = 1,nqpts
@@ -2440,7 +2445,7 @@ c
       real *8, allocatable :: fkervals(:,:),sigmatmp(:,:),cint2(:,:)
       real *8, allocatable :: rsigtmp(:,:)
       real *8 xyztmp(3)
-      integer *8 itmp,l
+      integer *8 itmp,l,ndata
       complex *16 ima
       real *8 alpha_c, beta_c
       integer *8 ier0,itype
@@ -2558,8 +2563,13 @@ cc      call prinf('nqpols=*',nqpols,1)
 
       npmax = nquad*nqpols
       allocate(sigvals(npols,npmax))
-      ndsv = 12
-      if (isd .eq. 1) ndsv = 30
+      if (isd .eq. 1) then
+         ndata = ndsc - 18
+         ndsv = 30 + ndata
+      else
+         ndata = ndsc - 9
+         ndsv = 12 + ndata
+      endif
       allocate(srcvals(ndsv,npmax),qwts(npmax))
 
       allocate(sigmatmp(nppols,npmax),fkervals(nker,npmax),
@@ -2605,7 +2615,7 @@ c
 
         do i=1,nquad
            istart = (i-1)*nqpols+1
-           call get_srcvals_auxinfo_tri(nqpols,wts,ndsv,
+           call get_srcvals_auxinfo(nqpols,wts,isd,ndata,ndsv,
      1          srcvals(1,istart),da(i),qwts(istart))
         enddo
 
@@ -2820,7 +2830,7 @@ c
       character *1 ttype
 
 
-      integer *8 npmax
+      integer *8 npmax, ndata 
 
       real *8, allocatable :: uvsq(:,:),wts(:),uvtmp(:,:)
       real *8, allocatable :: umattmp(:,:),vmattmp(:,:)
@@ -2909,8 +2919,13 @@ c
       npmax = nquadmax*nqpols
       allocate(sigvals(npols,npmax))
       allocate(sigvalsdens(nppols,npmax))
-      ndsv = 12
-      if (isd .eq. 1) ndsv = 30
+      if (isd .eq. 1) then
+         ndata = ndsc - 18
+         ndsv = 30 + ndata
+      else
+         ndata = ndsc - 9
+         ndsv = 12 + ndata
+      endif
       allocate(srcvals(ndsv,npmax),qwts(npmax))
 
 c
@@ -2946,7 +2961,7 @@ c
 
         call dgemm_guru(transa,transb,lda,nqpols,npols,alpha,
      1     srccoefs(1,1,iquad),lda,sigvals,ldb,beta,srcvals,ldc)
-        call get_srcvals_auxinfo_tri(nqpols,wts,isd,ndsv,srcvals,da,
+        call get_srcvals_auxinfo(nqpols,wts,isd,ndata,ndsv,srcvals,da,
      1       qwts)
 
         do itarg=itargptr(iquad),itargptr(iquad)+ntargptr(iquad)-1
@@ -2956,7 +2971,7 @@ c
           ier = 0
           call dquadadap_vec(eps,nqorder,nqpols,nlmax,nqmaxuse,nquad,
      1         ichild_start,tvs,da,uvsq,wts, norder,ipoly,ttype,npols,
-     2         isd,ndsc,ndsv,srccoefs(1,1,iquad),
+     2         isd,ndata,ndsc,ndsv,srccoefs(1,1,iquad),
      3         npmax,srcvals,
      4         qwts,sigvals,nporder,nppols,sigvalsdens,ndtarg,
      5         xyztarg(1,itarg),
@@ -3036,7 +3051,7 @@ c
 c
       subroutine dquadadap_vec(eps,m,kpols,nlmax,nqmax,nquad,
      1     ichild_start,tvs,da,uvsq,wts,
-     2     norder,ipoly,ttype,npols,isd,ndsc,ndsv,srccoefs,npmax,
+     2     norder,ipoly,ttype,npols,isd,ndata,ndsc,ndsv,srccoefs,npmax,
      3     srcvals,
      3     qwts,sigvals,nporder,nppols,sigvalsdens,
      4     ndtarg,xt,
@@ -3117,10 +3132,12 @@ c        npols = (norder+1)*(norder+2)/2 if ttype = 'T'
 c    - isd: integer *8
 c        * isd = 0, no second der info in srccoefs/srcvals
 c        * isd = 1, second der info in srccoefs/srcvals, pass to kern 
+c    - ndata: integer *8
+c        number of data rows in srccoefs. 
 c    - ndsc: integer *8
-c        leading dimension of srccoefs. 9 if isd=0 and 18 if isd=1   
+c        leading dimension of srccoefs. 9+ndata if isd=0 and 18+ndata if isd=1   
 c    - ndsv: integer *8
-c        leading dimension of srcvals. 12 if isd=0 and 30 if isd=1   
+c        leading dimension of srcvals. 12+ndata if isd=0 and 30+ndata if isd=1   
 c    - srccoefs: double precision (ndsc,npols)
 c        basis expansion coefficients of xyz, dxyz/du,
 c        and dxyz/dv on each patch. For each patch
@@ -3203,7 +3220,7 @@ c-------------------
       implicit real *8 (a-h,o-z)
       implicit integer *8 (i-n)
       integer *8, allocatable :: istack(:)
-      integer *8 ichild_start(nqmax), nker
+      integer *8 ichild_start(nqmax), nker, ndata
       real *8 da(nqmax)
       real *8 tvs(2,3,nqmax), uvsq(2,kpols),wts(kpols)
       integer *8 nproclist0, nproclist
@@ -3280,7 +3297,7 @@ c
 
 
       call dquadadap_vec_main(eps,kpols,nlmax,nqmax,nquad,ichild_start,
-     1     tvs,da,uvsq,wts,norder,ipoly,ttype,npols,isd,ndsc,ndsv,
+     1     tvs,da,uvsq,wts,norder,ipoly,ttype,npols,isd,ndata,ndsc,ndsv,
      2     srccoefs,
      2     npmax,srcvals,qwts,sigvals,nporder,nppols,
      3     sigvalsdens,ndtarg,xt,
@@ -3296,7 +3313,7 @@ c
 c
       subroutine dquadadap_vec_main(eps,kpols,nlmax,nqmax,nquad,
      1     ichild_start,
-     1     tvs,da,uvsq,wts,norder,ipoly,ttype,npols,isd,ndsc,ndsv,
+     1     tvs,da,uvsq,wts,norder,ipoly,ttype,npols,isd,ndata,ndsc,ndsv,
      2     srccoefs,
      2     npmax,srcvals,qwts,sigvals,nporder,nppols,sigvalsdens,
      3     ndtarg,xt,
@@ -3380,10 +3397,12 @@ c        npols = (norder+1)*(norder+2)/2 if ttype = 'T'
 c    - isd: integer *8
 c        * isd = 0, no second der info in srccoefs/srcvals
 c        * isd = 1, second der info in srccoefs/srcvals, pass to kern 
+c    - ndata: integer *8
+c        number of data rows in srccoefs
 c    - ndsc: integer *8
-c        leading dimension of srccoefs. 9 if isd=0 and 18 if isd=1   
+c        leading dimension of srccoefs. 9+ndata if isd=0 and 18+ndata if isd=1   
 c    - ndsv: integer *8
-c        leading dimension of srcvals. 12 if isd=0 and 30 if isd=1   
+c        leading dimension of srcvals. 12+ndata if isd=0 and 30+ndata if isd=1   
 c    - srccoefs: double precision (ndsc,npols)
 c        basis expansion coefficients of xyz, dxyz/du,
 c        and dxyz/dv on each patch. For each patch
@@ -3478,7 +3497,7 @@ c-------------------
 
       implicit real *8 (a-h,o-z)
       implicit integer *8 (i-n)
-      integer *8 istack(*),nproclist0,nker
+      integer *8 istack(*),nproclist0,nker,ndata
       integer *8 ichild_start(nqmax)
       integer *8 nporder,nppols
       real *8 da(nqmax)
@@ -3582,7 +3601,7 @@ c               print *, "Exiting without computing anything"
               call dgemm_guru(transa,transb,lda,kpols,npols,alpha,
      1           srccoefs,lda,sigvals(1,istart),ldb,beta,
      2           srcvals(1,istart),ldc)
-              call get_srcvals_auxinfo_tri(kpols,wts,isd,ndsv,
+              call get_srcvals_auxinfo(kpols,wts,isd,ndata,ndsv,
      1             srcvals(1,istart),da(j),qwts(istart))
 
             enddo
@@ -3898,7 +3917,7 @@ c
       character *1 transa,transb
       
       real *8 alpha,beta
-      integer *8 lda,ldb,ldc
+      integer *8 lda,ldb,ldc,ndata
       integer *8 int8_1,int8_2,int8_9
       
       data ima/(0.0d0,1.0d0)/
@@ -4018,8 +4037,13 @@ c
       allocate(sigvals(npols,npmax))
       allocate(sigvalsdens(nppols,npmax))
 
-      ndsv = 12
-      if (isd .eq. 1) ndsv = 30
+      if (isd .eq. 1) then
+         ndata = ndsc - 18
+         ndsv = 30 + ndata
+      else
+         ndata = ndsc - 9
+         ndsv = 12 + ndata
+      endif
       allocate(srcvals(ndsv,npmax),qwts(npmax))
 
       allocate(xkernvals(nker,npmax))
@@ -4063,7 +4087,7 @@ c
 
         do i=1,nquad
           istart = (i-1)*nqpols+1
-          call get_srcvals_auxinfo_tri(nqpols,wts,isd,ndsv,
+          call get_srcvals_auxinfo(nqpols,wts,isd,ndata,ndsv,
      1         srcvals(1,istart),da(i),qwts(istart))
         enddo
 
@@ -4118,7 +4142,7 @@ c
           ier = 0
           call dquadadap_vec_main(eps,nqpols,nlmax,nquadmax,nquad,
      1      ichild_start,tverts,da,uvsq,wts,norder,ipoly,ttype,
-     1      npols,isd,ndsc,ndsv,srccoefs(1,1,iquad),
+     1      npols,isd,ndata,ndsc,ndsv,srccoefs(1,1,iquad),
      2      npmax,srcvals,qwts,sigvals,nporder,nppols,sigvalsdens,
      3      ndtarg,xyztarg(1,itarg),
      4         fker,nker,ndd,dpars,ndz,zpars,ndi,ipars,cvals,istack,
@@ -4137,11 +4161,6 @@ c
 
       return
       end
-c
-c
-c
-c
-c
 c
 c
 c

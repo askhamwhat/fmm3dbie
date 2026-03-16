@@ -992,34 +992,43 @@ c
       end
 c
 c
+c     TO REPLACE get_quadparams_adap
+c     TODO: review logic and efficiency of these
+c     selections
+c     
       subroutine get_quadparams_adap0(eps,iptype,norder,
-     1     nqorder,eps_adap,nlev,nqorder_f)
+     1     rfac0,nqorder,eps_adap,nlev,nqorder_f)
 c
-c
-c
-c         This subroutine returns the quadrature parameters
-c         for computing integrals using adaptive integration
-c
-c        input:
-c          eps - real *8
-c             tolerance
-c          iptype - integer *8
-c             patch type
-c        outputs:
-c          nqorder - integer *8
-c             order of XG nodes to use on each triangle in the
-c             adaptive integration strategy
-c          eps_adap - real *8
-c             stopping criterion for adaptive integration
-c          nlev - integer *8
-c             number of uniform levels for using oversampled 
-c             quadrature in the near-field
-c          nqorder_f - order of XG nodes to use in each of
-c            triangles when using oversampled quadrature in
-c            the near field
-c
+c     This subroutine returns the quadrature parameters
+c     for computing integrals using adaptive integration
+c     
+c     input:
+c      
+c     eps - real *8
+c       tolerance
+c     iptype - integer *8
+c       patch type
+c     norder - integer *8
+c       order of patch
+c     rfac0 - real *8
+c       multiple of patch radius delineating "near/far"
+c       near field
+c     
+c     outputs:
+c     nqorder - integer *8
+c       order of XG nodes to use on each triangle in the
+c       adaptive integration strategy
+c     eps_adap - real *8
+c       stopping criterion for adaptive integration
+c     nlev - integer *8
+c       number of uniform levels for using oversampled 
+c       quadrature in the near-field
+c     nqorder_f - order of XG nodes to use in each of
+c       triangles when using oversampled quadrature in
+c       the near field
+c     
       implicit none
-      real *8 eps,eps_adap,eps0
+      real *8 eps,eps_adap,rfac0
       integer *8 norder,nqorder,i,iprec
       integer *8 nlev,nqorder_f,iptype
       
@@ -1170,3 +1179,74 @@ C$OMP END PARALLEL DO
 
 
       
+c-----------------------------------------
+      subroutine get_srcvals_auxinfo(kpols,whts,isd,ndata,ndsv,srcvals,
+     1     da,qwts)
+c
+c     this routine assumes that srcvals has been evaluated
+c     from srccoefs at a collections of points
+c
+c     for isd = 0, there is only first order deriv info.
+c     ndsv should be >= 12 + ndata
+c     for isd = 1, there is also second order deriv info.
+c     ndsv should be >= 30 + ndata 
+c      
+      implicit real *8 (a-h,o-z)
+      implicit integer *8 (i-n)
+      integer *8 isd, ndsv, ndata
+      real *8 srcvals(ndsv,kpols),qwts(kpols),whts(kpols)
+      real *8 tmp(3),da, rl, rm, rn, tra, deta, dfac
+
+
+      do i=1,kpols
+c     
+c     move srcvals stuff if needed first
+c     
+         if(isd.eq.1) then
+            srcvals(31:(31+ndata-1),i) = srcvals(19:(19+ndata-1),i)
+            srcvals(13:21,i) = srcvals(10:18,i)
+         else
+            srcvals(13:(13+ndata-1),i) = srcvals(10:(10+ndata-1),i)
+         endif
+         call cross_prod3d(srcvals(4,i),srcvals(7,i),srcvals(10,i))
+         rr = sqrt(srcvals(10,i)**2 + srcvals(11,i)**2 + 
+     1        srcvals(12,i)**2)
+         qwts(i) = rr*da*whts(i)
+         srcvals(10,i) = srcvals(10,i)/rr
+         srcvals(11,i) = srcvals(11,i)/rr
+         srcvals(12,i) = srcvals(12,i)/rr
+         if(isd.ne.0) then
+            re = srcvals(4,i)**2 + srcvals(5,i)**2 + srcvals(6,i)**2
+            rf = srcvals(4,i)*srcvals(7,i) + srcvals(5,i)*srcvals(8,i) + 
+     1           srcvals(6,i)*srcvals(9,i)
+            rg = srcvals(7,i)**2 + srcvals(8,i)**2 + srcvals(9,i)**2
+            rl = srcvals(13,i)*srcvals(10,i) + 
+     1           srcvals(14,i)*srcvals(11,i) + 
+     1           srcvals(15,i)*srcvals(12,i)  
+            rm = srcvals(16,i)*srcvals(10,i) + 
+     1           srcvals(17,i)*srcvals(11,i) + 
+     1           srcvals(18,i)*srcvals(12,i)  
+            rn = srcvals(19,i)*srcvals(10,i) + 
+     1           srcvals(20,i)*srcvals(11,i) + 
+     1           srcvals(21,i)*srcvals(12,i)  
+            srcvals(22,i) = rr
+            srcvals(23,i) = re
+            srcvals(24,i) = rf
+            srcvals(25,i) = rg
+            srcvals(26,i) = rl
+            srcvals(27,i) = rm
+            srcvals(28,i) = rn
+            
+            tra = rg*rl - 2*rf*rm + re*rn 
+            deta = (rg*rl - rf*rm)*(re*rn - rf*rm) - 
+     1           (rg*rm - rf*rn)*(re*rm - rf*rl)   
+            dfac = sqrt(tra*tra - 4*deta)
+            srcvals(29,i) = 0.5d0*(tra + dfac)/(re*rg - rf*rf)
+            srcvals(30,i) = 0.5d0*(tra - dfac)/(re*rg - rf*rf)
+         endif
+      enddo
+
+      return
+      end
+c     
+c     
