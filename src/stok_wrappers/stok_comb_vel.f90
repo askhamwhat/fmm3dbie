@@ -413,7 +413,7 @@
         !$ t1 = omp_get_wtime()
         
         fker => st3d_comb
-        do i = 1,0
+        do i = 1,6
            call dgetnearquad_ggq_guru(npatches, norders, ixyzs, &
                 iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, &
                 ipatch_id, uvs_targ, eps, ipv, fker, ndd, dpars, ndz, &
@@ -443,7 +443,7 @@
         dopts = rfac0
         liopts = 0 ! all defaults 
         linfo = 1
-        call dgetnearquad_guru(npatches, norders, ixyzs, &
+        if (.false.) call dgetnearquad_guru(npatches, norders, ixyzs, &
              iptype, npts, isd, ndsc, ndsv, srccoefs, srcvals, &
              ndtarg, ntarg, targs, ipatch_id, uvs_targ, eps, ipv, &
              fker, nker, ndd, dpars, ndz, zpars, ndi, ipars, &
