@@ -42,7 +42,7 @@ c       igeomtype = 1 => sphere
 c       igeomtype = 2 => stellarator
 c 
       igeomtype = 1
-      if(igeomtype.eq.1) ipars(1) = 0
+      if(igeomtype.eq.1) ipars(1) = 1
       if(igeomtype.eq.2) ipars(1) = 5*2
 
       if(igeomtype.eq.1) then
@@ -93,7 +93,7 @@ c
         xyz_targ(3) = xyz_out(3)
       endif
 
-      norder = 4
+      norder = 6
       npols = (norder+1)*(norder+2)/2
 
       npts = npatches*npols

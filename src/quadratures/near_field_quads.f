@@ -462,7 +462,7 @@ c
      3        xyztarg2,itargptr,ntarg_n,norder,npols,fker,nker,
      4        ndd,dpars,ndz,zpars,ndi,ipars,nqordert,npmax,rfac,sints_n,
      5        ifmetric,rn1,n2)
-         
+
          if(iptype(ipatch).eq.11.or.iptype(ipatch).eq.12) 
      1        call dquadints_vec(epsp,istrat,intype,ntest0,norder,ipoly,
      2        ttype,npols,isd,ndsc,srccoefs(1,istart),ndtarg,ntarg_n,
@@ -489,7 +489,7 @@ c
      3        itargptr,ntarg_f,norder,npols,fker,nker,ndd,dpars,
      4        ndz,zpars,ndi,ipars,npts_f_quad,qnodes_quad,qwts_quad,
      5        sints_f)
-         
+
          call permute_12_3d(sints_f,svtmp_f,nker,npols,ntarg_f)
          ncols = nker*ntarg_f
          call dgemm_guru('t','n',npols,ncols,npols,done,umatr,npols,

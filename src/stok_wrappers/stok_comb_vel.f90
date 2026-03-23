@@ -398,39 +398,10 @@
       ijloc(1,6) = 3
       ijloc(2,6) = 3
 
-      allocate(wneartmp(nquad),wnear2(6,nquad))
-
 
       if(iquadtype.eq.1) then
 
-!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(ii)          
-        do ii = 1,nquad
-          wneartmp(ii) = 0
-        enddo
-!$OMP END PARALLEL DO
-
-        call cpu_time(t1)
-        !$ t1 = omp_get_wtime()
-        
         fker => st3d_comb
-        do i = 1,0
-           call dgetnearquad_ggq_guru(npatches, norders, ixyzs, &
-                iptype, npts, srccoefs, srcvals, ndtarg, ntarg, targs, &
-                ipatch_id, uvs_targ, eps, ipv, fker, ndd, dpars, ndz, &
-                zpars, ndi, ijloc(1,i), nnz, row_ptr, col_ind, iquad, &
-                rfac0, nquad, wneartmp)
-           
-           !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(ii)          
-           do ii = 1,nquad
-              wnear(i,ii) = wneartmp(ii)
-           enddo
-           !$OMP END PARALLEL DO
-        enddo
-        call cpu_time(t2)
-        !$ t2 = omp_get_wtime()
-
-        print *, 'time separate ', t2-t1
-
         call cpu_time(t1)
         !$ t1 = omp_get_wtime()
         
@@ -453,9 +424,6 @@
 
         call cpu_time(t2)
         !$ t2 = omp_get_wtime()
-        
-        print *, 'time together ', t2-t1
-
         
       endif
 
