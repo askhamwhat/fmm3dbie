@@ -909,7 +909,7 @@ c
 c
 c
 
-      subroutine dvslp(nd,x,ndt,y,ndd,dpars,ndz,zpars,ndi,ipars,f)
+      subroutine dvslp(x,ndt,y,ndd,dpars,ndz,zpars,ndi,ipars,f)
       implicit real *8 (a-h,o-z)
       implicit integer *8 (i-n)
       real *8 x(*),y(ndt),dpars(ndd)

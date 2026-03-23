@@ -1978,7 +1978,7 @@ c        nporder = (nporder+1)*(nporder+2)/2
 c    - fker: function handle
 c        function handle for evaluating the kernel k
 c        * expected calling sequence
-c            fker(nd,x,ndtarg,y,ndd,dpars,ndz,zpars,ndi,ipars,f)
+c            fker(x,ndtarg,y,ndd,dpars,ndz,zpars,ndi,ipars,f)
 c               
 c        In this routine the output is expected to be a real
 c        vector
@@ -2247,7 +2247,7 @@ c        with discretization order = nporder
 c    - fker: function handle
 c        function handle for evaluating the kernel k
 c        * expected calling sequence
-c            fker(nd,x,ndtarg,y,ndd,dpars,ndz,zpars,ndi,ipars,f)
+c            fker(x,ndtarg,y,ndd,dpars,ndz,zpars,ndi,ipars,f)
 c               
 c        In this routine the output is expected to be a real
 c        vector
@@ -2643,7 +2643,7 @@ c        with discretization order = nporder
 c    - fker: function handle
 c        function handle for evaluating the kernel k
 c        * expected calling sequence
-c            fker(nd, x,ndtarg,y,ndd,dpars,ndz,zpars,ndi,ipars,f)
+c            fker( x,ndtarg,y,ndd,dpars,ndz,zpars,ndi,ipars,f)
 c               
 c        In this routine the output is expected to be a real
 c        vector
@@ -3037,7 +3037,7 @@ c        with discretization order = nporder
 c    - fker: function handle
 c        function handle for evaluating the kernel k
 c        * expected calling sequence
-c            fker(nd, x,ndtarg,y,ndd,dpars,ndz,zpars,ndi,ipars,f)
+c            fker( x,ndtarg,y,ndd,dpars,ndz,zpars,ndi,ipars,f)
 c               
 c        In this routine the output is expected to be a real
 c        vector
@@ -3487,7 +3487,7 @@ c        with discretization order = nporder
 c    - fker: function handle
 c        function handle for evaluating the kernel k
 c        * expected calling sequence
-c            fker(nd,x,ndtarg,y,ndd,dpars,ndz,zpars,ndi,ipars,f)
+c            fker(x,ndtarg,y,ndd,dpars,ndz,zpars,ndi,ipars,f)
 c               
 c        In this routine the output is expected to be a real
 c        vector

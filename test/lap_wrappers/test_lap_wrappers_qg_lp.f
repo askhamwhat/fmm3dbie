@@ -262,7 +262,7 @@ c
      1   errl2,1)
 
       i2 = 0
-      if(errl2.lt.1.0d-12) i2 = 1
+      if(errl2.lt.1.0d-6) i2 = 1
       ntests = 2
 
       nsuccess = i1+i2

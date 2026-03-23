@@ -211,9 +211,11 @@ c
      2  ntargptr,norder,npols,lslp,int8_0,dpars,int8_1,zpars,
      3  int8_0,ipars,nqorder,nquadmax,rfac,slp,ifmetric,rn1,n2)
 
+      isd = 0
+      ndsc = 9
       call dquadints_vec(eps,istrat,intype,npatches,norder,ipoly,ttype,
-     1     npols,srccoefs,int8_3,ntarg,xyztarg,ifp,xyztarg,itargptr,
-     2     ntargptr,
+     1     npols,isd,ndsc,srccoefs,int8_3,ntarg,xyztarg,ifp,
+     2     xyztarg,itargptr,ntargptr,
      2     norder,npols,lslp_vec,nker,int8_0,dpars,int8_1,zpars,int8_0,
      3     ipars,nqorder,
      3     nquadmax, rfac,slp_vec,ifmetric,rn1,n2)
