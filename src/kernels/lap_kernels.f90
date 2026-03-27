@@ -316,6 +316,31 @@ subroutine l3d_sgradz(srcinfo,ndt,targinfo,ndd,dpars,ndz,zk,ndi,ipars,val)
 end subroutine l3d_sgradz
 
 
+subroutine l3d_sgrad_vec(srcinfo,ndt,targinfo,ndd,dpars,ndz,zk,ndi,ipars,val)
+  implicit real *8 (a-h,o-z)
+  implicit integer *8 (i-n)
+  real *8 :: srcinfo(*), targinfo(ndt),dpars(ndd)
+  integer *8 ipars(ndi)
+  real *8 :: val(3)
+  real *8 :: over4pi
+  complex *16 :: zk
+
+  data over4pi/0.07957747154594767d0/
+
+  dx=targinfo(1)-srcinfo(1)
+  dy=targinfo(2)-srcinfo(2)
+  dz=targinfo(3)-srcinfo(3)
+
+  r=sqrt(dx**2+dy**2+dz**2)
+
+  val(1) = -dx/(r**3)*over4pi
+  val(2) = -dy/(r**3)*over4pi
+  val(3) = -dz/(r**3)*over4pi
+
+  return
+end subroutine l3d_sgrad_vec
+
+
 
 
 

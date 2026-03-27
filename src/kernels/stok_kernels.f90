@@ -35,7 +35,7 @@
 
 
 
-subroutine st3d_slp_vec(nd,src,ndt,targ,ndd,dpars,ndz,zk,ndi, &
+subroutine st3d_slp_vec(src,ndt,targ,ndd,dpars,ndz,zk,ndi, &
      ipars,val)
   implicit real *8 (a-h,o-z)
   implicit integer *8 (i-n)
@@ -43,7 +43,7 @@ subroutine st3d_slp_vec(nd,src,ndt,targ,ndd,dpars,ndz,zk,ndi, &
   integer *8 ipars(ndi)
   
   complex *16 :: zk
-  real *8 :: val(nd)
+  real *8 :: val(9)
   real *8 over4pi
   data over4pi/0.07957747154594767d0/
 
@@ -138,7 +138,7 @@ end subroutine st3d_slp
 
 
 
-subroutine st3d_dlp_vec(nd,srcinfo,ndt,targ,ndd,dpars,ndz,zk,ndi, &
+subroutine st3d_dlp_vec(srcinfo,ndt,targ,ndd,dpars,ndz,zk,ndi, &
      ipars,val)
 !f2py intent(in) nd,src,ndt,targ,ndd,dpars,ndz,zk,ndi,ipars
 !f2py intent(out) val
@@ -147,7 +147,7 @@ subroutine st3d_dlp_vec(nd,srcinfo,ndt,targ,ndd,dpars,ndz,zk,ndi, &
   real *8 :: srcinfo(12), targ(ndt),dpars(ndd)
   integer *8 ipars(ndi)
   complex *16 :: zk
-  real *8 :: val(nd),over4pi
+  real *8 :: val(9),over4pi
 
   real *8 :: src(3), srcnorm(3)
   data over4pi/0.07957747154594767d0/
@@ -252,7 +252,7 @@ subroutine st3d_dlp(srcinfo,ndt,targ,ndd,dpars,ndz, &
 end subroutine st3d_dlp
 
 
-subroutine st3d_comb_vec(nd,srcinfo,ndt,targ,ndd,dpars,ndz,zk,ndi, &
+subroutine st3d_comb_vec(srcinfo,ndt,targ,ndd,dpars,ndz,zk,ndi, &
      ipars,val)
 !f2py intent(in) nd,src,ndt,targ,ndd,dpars,ndz,zk,ndi,ipars
 !f2py intent(out) val
@@ -261,7 +261,7 @@ subroutine st3d_comb_vec(nd,srcinfo,ndt,targ,ndd,dpars,ndz,zk,ndi, &
   real *8 :: srcinfo(12), targ(ndt),dpars(ndd)
   integer *8 ipars(ndi)
   complex *16 :: zk
-  real *8 :: val(nd)
+  real *8 :: val(9)
 
   real *8 :: src(3), srcnorm(3), alpha, beta,over4pi
   data over4pi/0.07957747154594767d0/
@@ -575,3 +575,191 @@ subroutine st3d_strac(srcinfo,ndt,targinfo,ndd,dpars, &
 end subroutine st3d_strac
 
 
+! non-standard normal derivative of S kernel 
+
+subroutine st3d_sprime_vec(srcinfo,ndt,targinfo, &
+     ndd,dpars,ndz,zk,ndi,ipars,val)
+  implicit real *8 (a-h,o-z)
+  real *8 :: srcinfo(*), targinfo(12),dpars(ndd)
+  integer *8 ipars(ndi)
+  real *8 :: val(9), targ(3), src(3), targnorm(3),over4pi
+  data over4pi/0.07957747154594767d0/
+!f2py intent(in) nd,src,ndt,targ,ndd,dpars,ndz,zk,ndi,ipars
+!f2py intent(out) val
+
+  !
+  ! returns the normal derivative of the Stokes single layer kernel
+  !
+  ! S'_ij = -3(r_n r_j r_i)/r^5
+  !          + (n_i r_j + n_j r_i - delta_{ij} r_n)/r^3
+  !
+  ! where r = |src-targ| and n is the normal vector at the
+  ! target and r_i = targ_i-src_i. The output is given ordered
+  ! by standard linear indexing, ij -> i+(j-1)*3
+
+  src(1)=srcinfo(1)
+  src(2)=srcinfo(2)
+  src(3)=srcinfo(3)
+  targ(1)=targinfo(1)
+  targ(2)=targinfo(2)
+  targ(3)=targinfo(3)
+  targnorm(1)=targinfo(10)
+  targnorm(2)=targinfo(11)
+  targnorm(3)=targinfo(12)
+  
+!  call prin2('srcinfo=*',srcinfo,12)
+
+  dx=targ(1)-src(1)
+  dy=targ(2)-src(2)
+  dz=targ(3)-src(3)
+
+  dprod = dx*targnorm(1) + dy*targnorm(2) + dz*targnorm(3)
+
+  r=sqrt(dx**2+dy**2+dz**2)
+  rinv = 1.0d0/r
+  rinv3 = rinv*rinv*rinv
+  rinv5 = rinv3*rinv*rinv
+  
+  rinv3 = 0.5d0*over4pi*rinv3
+  rinv5 = -3.0d0*0.5d0*dprod*rinv5*over4pi
+
+  dxdy = dx*dy*rinv5 + (targnorm(1)*dy + targnorm(2)*dx)*rinv3
+  dxdz = dx*dz*rinv5 + (targnorm(1)*dz + targnorm(3)*dx)*rinv3
+  dydz = dy*dz*rinv5 + (targnorm(2)*dz + targnorm(3)*dy)*rinv3
+
+  val(1) = dx*dx*rinv5 + (2*targnorm(1)*dx - dprod)*rinv3
+  val(2) = dxdy
+  val(3) = dxdz
+  val(4) = dxdy
+  val(5) = dy*dy*rinv5 + (2*targnorm(2)*dy - dprod)*rinv3
+  val(6) = dydz
+  val(7) = dxdz
+  val(8) = dydz
+  val(9) = dz*dz*rinv5 + (2*targnorm(3)*dz - dprod)*rinv3
+
+  return
+end subroutine st3d_sprime_vec
+
+
+subroutine st3d_sprime(srcinfo,ndt,targinfo,ndd,dpars, &
+     ndz,zk,ndi,ipars,val)
+  implicit real *8 (a-h,o-z)
+  real *8 :: srcinfo(*), targinfo(12),dpars(ndd)
+  integer *8 ipars(ndi)
+  real *8 :: val, targ(3), src(3), targnorm(3), dr(3),over4pi
+  integer *8 :: delta(3,3)
+  data over4pi/0.07957747154594767d0/
+  data delta/1, 0, 0, 0, 1, 0, 0, 0, 1/
+  
+!f2py intent(in) src,ndt,targ,ndd,dpars,ndz,zk,ndi,ipars
+!f2py intent(out) val
+
+  !
+  ! returns one entry of the normal derivative of the Stokes single
+  ! layer kernel
+  !
+  ! S'_ij = -3(r_n r_j r_i)/r^5
+  !          + (n_i r_j + n_j r_i - delta_{ij} r_n)/r^3
+  !
+  ! where r = |src-targ| and n is the normal vector at the
+  ! target and r_i = targ_i-src_i. The output is 
+  ! val=S'_ij, with i = ipars(1), j = ipars(2)
+
+  src(1)=srcinfo(1)
+  src(2)=srcinfo(2)
+  src(3)=srcinfo(3)
+  targ(1)=targinfo(1)
+  targ(2)=targinfo(2)
+  targ(3)=targinfo(3)
+  targnorm(1)=targinfo(10)
+  targnorm(2)=targinfo(11)
+  targnorm(3)=targinfo(12)
+  
+!  call prin2('srcinfo=*',srcinfo,12)
+
+  dx=targ(1)-src(1)
+  dy=targ(2)-src(2)
+  dz=targ(3)-src(3)
+  
+  dprod = dx*targnorm(1) + dy*targnorm(2) + dz*targnorm(3)
+
+  r=sqrt(dx**2+dy**2+dz**2)
+  rinv = 1.0d0/r
+  rinv3 = rinv*rinv*rinv
+  rinv5 = rinv3*rinv*rinv
+  
+  rinv3 = 0.5d0*over4pi*rinv3
+  rinv5 = -3.0d0*0.5d0*dprod*rinv5*over4pi
+
+  dr(1) = dx
+  dr(2) = dy
+  dr(3) = dz
+
+  i = ipars(1)
+  j = ipars(2)
+
+  dxi = dr(i)
+  dxj = dr(j)
+  
+  val = dxi*dxj*rinv5 + &
+       (targnorm(i)*dxj + targnorm(j)*dxi - delta(i,j)*dprod)*rinv3
+
+  return
+end subroutine st3d_sprime
+
+! surface divergence of single layer kernel
+!
+! uses identity div_Gamma S = - n \cdot \partial_n S
+
+subroutine st3d_sdiv_vec(srcinfo,ndt,targinfo, &
+     ndd,dpars,ndz,zk,ndi,ipars,val)
+  implicit real *8 (a-h,o-z)
+  real *8 :: srcinfo(*), targinfo(12),dpars(ndd)
+  integer *8 ipars(ndi)
+  real *8 :: val(3), targ(3), src(3), targnorm(3),over4pi
+  data over4pi/0.07957747154594767d0/
+!f2py intent(in) nd,src,ndt,targ,ndd,dpars,ndz,zk,ndi,ipars
+!f2py intent(out) val
+
+  !
+  ! returns the surface divergence of the Stokes single layer kernel
+  !
+  ! a 1x3 operator that is equal to -n \cdot S'
+  !
+  ! (div_Gamma S)_j = (3(r_n^2 r_j)/r^5 - r_j/r^3)/(8*pi)
+  !
+  ! where r = |src-targ| and n is the normal vector at the
+  ! target and r_i = targ_i-src_i.
+  !
+  ! this has a principal value type singularity 
+
+  src(1)=srcinfo(1)
+  src(2)=srcinfo(2)
+  src(3)=srcinfo(3)
+  targ(1)=targinfo(1)
+  targ(2)=targinfo(2)
+  targ(3)=targinfo(3)
+  targnorm(1)=targinfo(10)
+  targnorm(2)=targinfo(11)
+  targnorm(3)=targinfo(12)
+  
+!  call prin2('srcinfo=*',srcinfo,12)
+
+  dx=targ(1)-src(1)
+  dy=targ(2)-src(2)
+  dz=targ(3)-src(3)
+
+  dprod = dx*targnorm(1) + dy*targnorm(2) + dz*targnorm(3)
+
+  r=sqrt(dx**2+dy**2+dz**2)
+  rinv = 1.0d0/r
+  rinv2 = rinv*rinv
+  rinv3 = rinv*rinv2
+  
+  dtmp = 0.5d0*over4pi*rinv3*(3.0d0*dprod*dprod*rinv2 - 1)
+  val(1) = dx*dtmp
+  val(2) = dy*dtmp
+  val(3) = dz*dtmp
+
+  return
+end subroutine st3d_sdiv_vec
