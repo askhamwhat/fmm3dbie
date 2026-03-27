@@ -1,33 +1,27 @@
-function [sigma, varargout] = solver(S, rhs, eps, opts)
+function [sp, varargout] = sneu(S, dens, eps, opts)
 %
-%  lap3d.neumann.solver
-%    Solve the Laplace neumann boundary value problem
+%  lap3d.lpcomp.sneu
+%    Evaluate S_{0}'[dens] on the surface
 %
 %  Syntax
-%   [sigma] = lap3d.neumann.solver(S,rhs,eps)
-%   [sigma] = lap3d.neumann.solver(S,rhs,eps,opts)
+%   sp = lap3d.lpcomp.sneu(S,dens,eps)
+%   sp = lap3d.lpcomp.sneu(S,dens,eps,opts)
 %
-%  Integral representation
-%     pot = S_{0} [\sigma] 
-%
-%  S_{0}: Laplace single layer potential
+%  S_{0}': normal derivative of Laplace single layer potential
 %  
 %  Input arguments:
 %    * S: surfer object, see README.md in matlab for details
-%    * rhs: boundary data 
+%    * dens: (npts) layer potential density 
 %    * eps: precision requested
 %    * opts: options struct
 %        opts.nonsmoothonly - use smooth quadrature rule for evaluating
 %           layer potential (false)
-%        opts.eps_gmres - tolerance to which linear system is to be
-%           solved (eps_gmres = eps)
-%        opts.maxit - maximum number of gmres iterations (200)
-%        opts.ifout - whether to solve interior problem or not (1)
 %        opts.quadrature_correction - precomputed quadrature correction ([])
 %        
 %
 %  Output arguemnts:
-%    * sigma: layer potential density
+%    * sp: normal derivative of Laplace single layer applied
+%             to layer potential density
 %    
 %
     
@@ -38,21 +32,6 @@ function [sigma, varargout] = solver(S, rhs, eps, opts)
     nonsmoothonly = false;
     if(isfield(opts,'nonsmoothonly'))
       nonsmoothonly = opts.nonsmoothonly;
-    end
-
-    eps_gmres = eps;
-    if(isfield(opts,'eps_gmres'))
-      eps_gmres = opts.eps_gmres;
-    end
-
-    maxit = 200;
-    if(isfield(opts,'maxit'))
-      maxit = opts.maxit;
-    end
-
-    ifout = 1;
-    if(isfield(opts,'ifout'))
-      ifout = opts.ifout;
     end
 
 % Extract arrays
@@ -122,23 +101,36 @@ function [sigma, varargout] = solver(S, rhs, eps, opts)
     iquad = Q.iquad;
     wnear = Q.wnear;
 
-
-    sigma = zeros(npts,1);
-    niter = 0;
-    errs = zeros(maxit+1,1);
-    maxitp1 = maxit + 1;
-    rres = 0;
+    sp = zeros(npts,1);
     nker = 1;
 
+    ndd = 1;
+    dpars = zeros(1,1);
+
+    % these are unused 
+    lwork = 1;
+    work = zeros(1,1);
+    ndi = 0;
+    ndz = 0;
+    ipars = zeros(1,1); 
+    zpars = zeros(1,1);
+    ndim = 1;
 
 % Call the layer potential evaluator
-    mex_id_ = 'lap_s_neu_solver_guru(c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[xx], c i double[x], c i int64_t[x], c i int64_t[x], c i double[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[x], c i double[x], c io int64_t[x], c io double[x], c io double[x], c io double[x])';
-[niter, errs, rres, sigma] = fmm3dbie_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, eps, maxit, ifout, rhs, nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, novers, nptso, ixyzso, srcover, wover, eps_gmres, niter, errs, rres, sigma, 1, npatches, npatp1, npatches, 1, n9, npts, n12, npts, 1, 1, 1, npts, 1, nptsp1, nnz, nnzp1, 1, 1, nquad, npatches, 1, npatp1, 12, nptso, nptso, 1, 1, maxitp1, 1, npts);
+    mex_id_ = 'lpcomp_lap_s_neu_addsub(c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[xx], c i double[x], c i int64_t[x], c i double[x], c i int64_t[x], c i dcomplex[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[x], c i int64_t[x], c i int64_t[x], c i int64_t[x], c i double[xx], c i double[x], c i int64_t[x], c i double[x], c i int64_t[x], c i double[x], c io double[x])';
+[sp] = fmm3dbie_routs(mex_id_, npatches, norders, ixyzs, iptype, npts, srccoefs, srcvals, eps, ndd, dpars, ndz, zpars, ndi, ipars, nnz, row_ptr, col_ind, iquad, nquad, nker, wnear, novers, nptso, ixyzso, srcover, wover, lwork, work, ndim, dens, sp, 1, npatches, npatp1, npatches, 1, n9, npts, n12, npts, 1, 1, ndd, 1, 1, 1, 1, 1, nptsp1, nnz, nnzp1, 1, 1, nquad, npatches, 1, npatp1, 12, nptso, nptso, 1, lwork, 1, npts, npts);
 
-    errs = errs(1:niter);
-    varargout{1} = errs;
-    varargout{2} = rres;
-    varargout{3} = Q;
+    varargout{1} = Q;
 end    
 %
 %
+
+
+%-------------------------------------------------
+%
+%%
+%%   Helmholtz dirichlet routines
+%
+%
+%-------------------------------------------------
+
