@@ -1,4 +1,30 @@
-
+! The kernel menu routine does dispatch to dgetnearquad_guru
+!
+! The aims of this routine are:
+! (1) replace redundant code in wrappers
+! (2) reduce redundant code for MATLAB interfaces 
+!
+! Warning: this routine requires that the user correctly
+! specifies ipv and nker. For complex kernels, nker should be
+! 2 times the length of the complex kernel output
+!
+! The convention follows the subroutine naming
+! convention. e.g. most subroutines have names of the
+! form
+!
+! l3d_slp
+!
+! the kernel family name is the initial string
+! ckerfam = 'l3d'
+! the kernel name is the remainder without the leading _
+! ckername = 'slp'
+!
+! if the kernel name has more underscores they are retained
+!
+! e.g. st3d_slp_vec6 has
+!
+! ckerfam = 'st3d' and ckername = 'slp_vec6'
+!
 
 subroutine dgetnearquad_kernelmenu(npatches,norders, &
      ixyzs,iptype,npts,isd,ndsc,ndsv,srccoefs,srcvals, &
@@ -31,7 +57,7 @@ subroutine dgetnearquad_kernelmenu(npatches,norders, &
 
   procedure (), pointer :: fker
 
-  !lap
+  ! lap
   external l3d_comb, l3d_slp, l3d_dlp, l3d_sprime, l3d_qlp
   external l3d_sgrad_vec, l3d_spp_sum_dp
   
@@ -44,9 +70,8 @@ subroutine dgetnearquad_kernelmenu(npatches,norders, &
 
   info(1) = 0
 
-  !
-  !        initialize the appropriate kernel function
-  !
+  ! initialize the appropriate kernel function
+  
 
   if (trim(ckerfam) .eq. 'l3d') then
      ! laplace kernels 
@@ -68,6 +93,7 @@ subroutine dgetnearquad_kernelmenu(npatches,norders, &
         info(1) = 2048
      end if
   elseif (trim(ckerfam) .eq. 'st3d') then
+     ! stokes kernels 
      if (trim(ckername) .eq. 'comb') then
         fker => st3d_comb
      elseif (trim(ckername) .eq. 'comb_vec') then
@@ -97,7 +123,31 @@ subroutine dgetnearquad_kernelmenu(npatches,norders, &
      else
         info(1) = 2048
      endif
-     
+  elseif (trim(ckerfam) .eq. 'h3d') then
+     ! laplace kernels 
+     if (trim(ckername) .eq. 'comb') then
+        fker => h3d_comb
+     elseif (trim(ckername) .eq. 'slp') then
+        fker => h3d_slp
+     elseif (trim(ckername) .eq. 'dlp') then
+        fker => h3d_dlp
+     elseif (trim(ckername) .eq. 'sprime') then
+        fker => h3d_sprime
+     elseif (trim(ckername) .eq. 'qlp') then
+        fker => h3d_sprime
+     elseif (trim(ckername) .eq. 'sgrad_vec') then
+        fker => h3d_sgrad_vec
+     elseif (trim(ckername) .eq. 'dprime_diff') then
+        fker => h3d_dprime_diff
+     elseif (trim(ckername) .eq. 'slp_diff') then
+        fker => h3d_slp_diff
+     elseif (trim(ckername) .eq. 'dlp_diff') then
+        fker => h3d_dlp_diff
+     elseif (trim(ckername) .eq. 'sprime_diff') then
+        fker => h3d_sprime_diff
+     else
+        info(1) = 2048
+     end if
   else
      ! kernel family name not recognized
      info(1) = 1024
