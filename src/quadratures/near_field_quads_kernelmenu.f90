@@ -41,7 +41,6 @@ subroutine dgetnearquad_kernelmenu(npatches,norders, &
   external st3d_strac_vec, st3d_strac, st3d_sprime_vec
   external st3d_sprime, st3d_sdiv_vec
   
-  integer *8 :: nker0
 
   info(1) = 0
 
@@ -49,73 +48,52 @@ subroutine dgetnearquad_kernelmenu(npatches,norders, &
   !        initialize the appropriate kernel function
   !
 
-  nker0 = 0
   if (trim(ckerfam) .eq. 'l3d') then
      ! laplace kernels 
      if (trim(ckername) .eq. 'comb') then
         fker => l3d_comb
-        nker0 = 1
      elseif (trim(ckername) .eq. 'slp') then
         fker => l3d_slp
-        nker0 = 1
      elseif (trim(ckername) .eq. 'dlp') then
         fker => l3d_dlp
-        nker0 = 1
      elseif (trim(ckername) .eq. 'sprime') then
         fker => l3d_sprime
-        nker0 = 1
      elseif (trim(ckername) .eq. 'qlp') then
         fker => l3d_sprime
-        nker0 = 1
      elseif (trim(ckername) .eq. 'sgrad_vec') then
         fker => l3d_sgrad_vec
-        nker0 = 3
      elseif (trim(ckername) .eq. 'spp_sum_dp') then
         fker => l3d_spp_sum_dp
-        nker0 = 1
      else
         info(1) = 2048
      end if
   elseif (trim(ckerfam) .eq. 'st3d') then
      if (trim(ckername) .eq. 'comb') then
         fker => st3d_comb
-        nker0 = 1
      elseif (trim(ckername) .eq. 'comb_vec') then
         fker => st3d_comb_vec
-        nker0 = 9
      elseif (trim(ckername) .eq. 'comb_vec6') then
         fker => st3d_comb_vec6
-        nker0 = 6
      elseif (trim(ckername) .eq. 'slp') then
         fker => st3d_slp
-        nker0 = 1
      elseif (trim(ckername) .eq. 'slp_vec') then
         fker => st3d_slp_vec
-        nker0 = 9
      elseif (trim(ckername) .eq. 'slp_vec6') then
         fker => st3d_slp_vec
-        nker0 = 6
      elseif (trim(ckername) .eq. 'dlp') then
         fker => st3d_dlp
-        nker0 = 1
      elseif (trim(ckername) .eq. 'dlp_vec') then
         fker => st3d_dlp_vec
-        nker0 = 1
      elseif (trim(ckername) .eq. 'dlp_vec6') then
         fker => st3d_dlp_vec6
-        nker0 = 1
      elseif (trim(ckername) .eq. 'sprime') then
         fker => st3d_sprime
-        nker0 = 1
      elseif (trim(ckername) .eq. 'sprime_vec') then
         fker => st3d_sprime_vec
-        nker0 = 9
      elseif (trim(ckername) .eq. 'sprime_vec6') then
-        fker => st3d_sprime_vec
-        nker0 = 6
+        fker => st3d_sprime_vec6
      elseif (trim(ckername) .eq. 'sdiv_vec') then
         fker => st3d_sprime_vec
-        nker0 = 3
      else
         info(1) = 2048
      endif
@@ -125,8 +103,6 @@ subroutine dgetnearquad_kernelmenu(npatches,norders, &
      info(1) = 1024
   end if
 
-  if (nker0 .ne. nker) info(1) = 4096
-  
   if (info(1) .ne. 0) return
 
   call dgetnearquad_guru(npatches,norders, &
