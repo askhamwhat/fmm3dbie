@@ -1980,7 +1980,7 @@ c        nporder = (nporder+1)*(nporder+2)/2
 c    - fker: function handle
 c        function handle for evaluating the kernel k
 c        * expected calling sequence
-c            fker(nd,x,ndtarg,y,ndd,dpars,ndz,zpars,ndi,ipars,f)
+c            fker(x,ndtarg,y,ndd,dpars,ndz,zpars,ndi,ipars,f)
 c               
 c        In this routine the output is expected to be a complex
 c        vector
@@ -2112,7 +2112,7 @@ c
         do j=1,nqpts
           do itarg=itargptr(ipatch),itargptr(ipatch)+ntarg0-1
             ii = itarg - itargptr(ipatch)+1
-            call fker(nd, srcvals(1,j), ndtarg, xyztarg(1,itarg),
+            call fker(srcvals(1,j), ndtarg, xyztarg(1,itarg),
      1         ndd, dpars, ndz, zpars, ndi, ipars, fval)
             xkernvals(:,ii,j) = fval(:)*qwts(j)
           enddo
@@ -2249,7 +2249,7 @@ c        with discretization order = nporder
 c    - fker: function handle
 c        function handle for evaluating the kernel k
 c        * expected calling sequence
-c            fker(nd,x,ndtarg,y,ndd,dpars,ndz,zpars,ndi,ipars,f)
+c            fker(x,ndtarg,y,ndd,dpars,ndz,zpars,ndi,ipars,f)
 c               
 c        In this routine the output is expected to be a complex
 c        vector
@@ -2520,7 +2520,7 @@ c
               do i=1,nqpols
                 jj = jstart+i
                 ii = npts+i
-                call fker(nd, srcvals(1,jj), ndtarg, xyztarg(1,itarg),
+                call fker( srcvals(1,jj), ndtarg, xyztarg(1,itarg),
      1             ndd, dpars, ndz, zpars, ndi, ipars, fkervals(1,ii))
                 do idim=1,nd
                   fkervals(idim,ii) = fkervals(idim,ii)*qwts(jj)
@@ -2645,7 +2645,7 @@ c        with discretization order = nporder
 c    - fker: function handle
 c        function handle for evaluating the kernel k
 c        * expected calling sequence
-c            fker(nd, x,ndtarg,y,ndd,dpars,ndz,zpars,ndi,ipars,f)
+c            fker( x,ndtarg,y,ndd,dpars,ndz,zpars,ndi,ipars,f)
 c               
 c        In this routine the output is expected to be a complex
 c        vector
@@ -3039,7 +3039,7 @@ c        with discretization order = nporder
 c    - fker: function handle
 c        function handle for evaluating the kernel k
 c        * expected calling sequence
-c            fker(nd, x,ndtarg,y,ndd,dpars,ndz,zpars,ndi,ipars,f)
+c            fker( x,ndtarg,y,ndd,dpars,ndz,zpars,ndi,ipars,f)
 c               
 c        In this routine the output is expected to be a complex
 c        vector
@@ -3122,7 +3122,7 @@ c
 cc      compute integral at level 0
 c
       do i=1,kpols
-         call fker(nd,srcvals(1,i), ndtarg, xt, ndd, dpars, ndz, zpars,
+         call fker(srcvals(1,i), ndtarg, xt, ndd, dpars, ndz, zpars,
      1        ndi, ipars, fval)
          do idim=1,nd
            xkernvals(idim,i) = fval(idim)*qwts(i)
@@ -3287,7 +3287,7 @@ c
           istart = (itric1-1)*kpols
           do j=1,kfine
             jj=j+istart
-            call fker(nd,srcvals(1,jj), ndtarg, xt, ndd, dpars,
+            call fker(srcvals(1,jj), ndtarg, xt, ndd, dpars,
      1         ndz, zpars, ndi, ipars, fval)
             do idim=1,nd
               xkernvals(idim,jj) = fval(idim)*qwts(jj)
@@ -3489,7 +3489,7 @@ c        with discretization order = nporder
 c    - fker: function handle
 c        function handle for evaluating the kernel k
 c        * expected calling sequence
-c            fker(nd,x,ndtarg,y,ndd,dpars,ndz,zpars,ndi,ipars,f)
+c            fker(x,ndtarg,y,ndd,dpars,ndz,zpars,ndi,ipars,f)
 c               
 c        In this routine the output is expected to be a complex
 c        vector
@@ -3804,7 +3804,7 @@ c
               enddo
               do i=1,nqpols
                 jj = jstart+i
-                call fker(nd,srcvals(1,jj), ndtarg, xyztarg(1,itarg),
+                call fker(srcvals(1,jj), ndtarg, xyztarg(1,itarg),
      1              ndd, dpars, ndz, zpars, ndi, ipars, 
      2              xkernvals(1,jj))
                 do idim=1,nd
