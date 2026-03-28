@@ -124,7 +124,7 @@ subroutine dgetnearquad_kernelmenu(npatches,norders, &
         info(1) = 2048
      endif
   elseif (trim(ckerfam) .eq. 'h3d') then
-     ! laplace kernels 
+     ! Helmholtz kernels 
      if (trim(ckername) .eq. 'comb') then
         fker => h3d_comb
      elseif (trim(ckername) .eq. 'slp') then
