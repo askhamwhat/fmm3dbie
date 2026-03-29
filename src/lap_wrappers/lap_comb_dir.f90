@@ -219,17 +219,6 @@
 
       call cpu_time(t1)
       !$ t1 = omp_get_wtime()
-      call getnearquad_lap_comb_dir_eval(npatches, norders, &
-        ixyzs, iptype, npts, srccoefs, srcvals, ndtarg, ntarg, &
-        srcvals, ipatch_id, uvs_targ, eps, dpars, iquadtype, nnz, &
-        row_ptr, col_ind, iquad, rfac0, nquad, wnear)
-      call cpu_time(t2)
-      !$ t2 = omp_get_wtime()
-
-      write(*,*) 'scalar build time ', t2-t1
-      
-      call cpu_time(t1)
-      !$ t1 = omp_get_wtime()
       liopts = 0
       ldopts = 0
       linfo = 1
@@ -237,7 +226,7 @@
       ndi = 0
       ndz = 0
       nker = 1
-      ipv = 0
+      ipv = 1
       ndsc = 9
       ndsv = 12
       isd = 0
@@ -251,6 +240,17 @@
       !$ t2 = omp_get_wtime()
 
       write(*,*) 'vector (nker=1) build time ', t2-t1, info
+      call cpu_time(t1)
+      !$ t1 = omp_get_wtime()
+      call getnearquad_lap_comb_dir_eval(npatches, norders, &
+        ixyzs, iptype, npts, srccoefs, srcvals, ndtarg, ntarg, &
+        srcvals, ipatch_id, uvs_targ, eps, dpars, iquadtype, nnz, &
+        row_ptr, col_ind, iquad, rfac0, nquad, wnear)
+      call cpu_time(t2)
+      !$ t2 = omp_get_wtime()
+
+      write(*,*) 'scalar build time ', t2-t1
+      
       
       return
       end
