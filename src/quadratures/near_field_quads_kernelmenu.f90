@@ -15,15 +15,18 @@
 ! l3d_slp
 !
 ! the kernel family name is the initial string
-! ckerfam = 'l3d'
+! ckerfam = 'l3d*'
 ! the kernel name is the remainder without the leading _
-! ckername = 'slp'
+! ckername = 'slp*'
+!
+! THE ASTERISKS ARE REQUIRED TO OVERCOME DIFFICULTIES IN
+! PASSING AND COMPARING STRINGS
 !
 ! if the kernel name has more underscores they are retained
 !
 ! e.g. st3d_slp_vec6 has
 !
-! ckerfam = 'st3d' and ckername = 'slp_vec6'
+! ckerfam = 'st3d*' and ckername = 'slp_vec6*'
 !
 
 subroutine dgetnearquad_kernelmenu(npatches,norders, &
@@ -55,95 +58,103 @@ subroutine dgetnearquad_kernelmenu(npatches,norders, &
   integer *8, intent(out) :: info(linfo)
   character *40, intent(in) :: ckerfam, ckername
 
+  character *40 :: trim_ast
+
   procedure (), pointer :: fker
 
-  ! lap
+  !!! built-ins 
+  
+  ! lap 3d
   external l3d_comb, l3d_slp, l3d_dlp, l3d_sprime, l3d_qlp
   external l3d_sgrad_vec, l3d_spp_sum_dp
   
-  ! stok
+  ! stok 3d
   external st3d_slp_vec, st3d_dlp_vec, st3d_slp, st3d_dlp
   external st3d_comb_vec, st3d_comb_vec6, st3d_comb
   external st3d_strac_vec, st3d_strac, st3d_sprime_vec
   external st3d_sprime, st3d_sdiv_vec
+  external st3d_dlp_vec6, st3d_slp_vec6, st3d_sprime_vec6
   
+  ! helm 3d
+  external h3d_comb, h3d_slp, h3d_dlp, h3d_sprime, h3d_qlp
+  external h3d_sgrad_vec, h3d_dprime_diff, h3d_slp_diff
+  external h3d_dlp_diff, h3d_sprime_diff
 
   info(1) = 0
 
   ! initialize the appropriate kernel function
-  
 
-  if (trim(ckerfam) .eq. 'l3d') then
+  if (trim(trim_ast(ckerfam)) .eq. 'l3d') then
      ! laplace kernels 
-     if (trim(ckername) .eq. 'comb') then
+     if (trim(trim_ast(ckername)) .eq. 'comb') then
         fker => l3d_comb
-     elseif (trim(ckername) .eq. 'slp') then
+     elseif (trim(trim_ast(ckername)) .eq. 'slp') then
         fker => l3d_slp
-     elseif (trim(ckername) .eq. 'dlp') then
+     elseif (trim(trim_ast(ckername)) .eq. 'dlp') then
         fker => l3d_dlp
-     elseif (trim(ckername) .eq. 'sprime') then
+     elseif (trim(trim_ast(ckername)) .eq. 'sprime') then
         fker => l3d_sprime
-     elseif (trim(ckername) .eq. 'qlp') then
+     elseif (trim(trim_ast(ckername)) .eq. 'qlp') then
         fker => l3d_sprime
-     elseif (trim(ckername) .eq. 'sgrad_vec') then
+     elseif (trim(trim_ast(ckername)) .eq. 'sgrad_vec') then
         fker => l3d_sgrad_vec
-     elseif (trim(ckername) .eq. 'spp_sum_dp') then
+     elseif (trim(trim_ast(ckername)) .eq. 'spp_sum_dp') then
         fker => l3d_spp_sum_dp
      else
         info(1) = 2048
      end if
-  elseif (trim(ckerfam) .eq. 'st3d') then
+  elseif (trim(trim_ast(ckerfam)) .eq. 'st3d') then
      ! stokes kernels 
-     if (trim(ckername) .eq. 'comb') then
+     if (trim(trim_ast(ckername)) .eq. 'comb') then
         fker => st3d_comb
-     elseif (trim(ckername) .eq. 'comb_vec') then
+     elseif (trim(trim_ast(ckername)) .eq. 'comb_vec') then
         fker => st3d_comb_vec
-     elseif (trim(ckername) .eq. 'comb_vec6') then
+     elseif (trim(trim_ast(ckername)) .eq. 'comb_vec6') then
         fker => st3d_comb_vec6
-     elseif (trim(ckername) .eq. 'slp') then
+     elseif (trim(trim_ast(ckername)) .eq. 'slp') then
         fker => st3d_slp
-     elseif (trim(ckername) .eq. 'slp_vec') then
+     elseif (trim(trim_ast(ckername)) .eq. 'slp_vec') then
         fker => st3d_slp_vec
-     elseif (trim(ckername) .eq. 'slp_vec6') then
+     elseif (trim(trim_ast(ckername)) .eq. 'slp_vec6') then
         fker => st3d_slp_vec
-     elseif (trim(ckername) .eq. 'dlp') then
+     elseif (trim(trim_ast(ckername)) .eq. 'dlp') then
         fker => st3d_dlp
-     elseif (trim(ckername) .eq. 'dlp_vec') then
+     elseif (trim(trim_ast(ckername)) .eq. 'dlp_vec') then
         fker => st3d_dlp_vec
-     elseif (trim(ckername) .eq. 'dlp_vec6') then
+     elseif (trim(trim_ast(ckername)) .eq. 'dlp_vec6') then
         fker => st3d_dlp_vec6
-     elseif (trim(ckername) .eq. 'sprime') then
+     elseif (trim(trim_ast(ckername)) .eq. 'sprime') then
         fker => st3d_sprime
-     elseif (trim(ckername) .eq. 'sprime_vec') then
+     elseif (trim(trim_ast(ckername)) .eq. 'sprime_vec') then
         fker => st3d_sprime_vec
-     elseif (trim(ckername) .eq. 'sprime_vec6') then
+     elseif (trim(trim_ast(ckername)) .eq. 'sprime_vec6') then
         fker => st3d_sprime_vec6
-     elseif (trim(ckername) .eq. 'sdiv_vec') then
+     elseif (trim(trim_ast(ckername)) .eq. 'sdiv_vec') then
         fker => st3d_sprime_vec
      else
         info(1) = 2048
      endif
-  elseif (trim(ckerfam) .eq. 'h3d') then
+  elseif (trim(trim_ast(ckerfam)) .eq. 'h3d') then
      ! Helmholtz kernels 
-     if (trim(ckername) .eq. 'comb') then
+     if (trim(trim_ast(ckername)) .eq. 'comb') then
         fker => h3d_comb
-     elseif (trim(ckername) .eq. 'slp') then
+     elseif (trim(trim_ast(ckername)) .eq. 'slp') then
         fker => h3d_slp
-     elseif (trim(ckername) .eq. 'dlp') then
+     elseif (trim(trim_ast(ckername)) .eq. 'dlp') then
         fker => h3d_dlp
-     elseif (trim(ckername) .eq. 'sprime') then
+     elseif (trim(trim_ast(ckername)) .eq. 'sprime') then
         fker => h3d_sprime
-     elseif (trim(ckername) .eq. 'qlp') then
+     elseif (trim(trim_ast(ckername)) .eq. 'qlp') then
         fker => h3d_sprime
-     elseif (trim(ckername) .eq. 'sgrad_vec') then
+     elseif (trim(trim_ast(ckername)) .eq. 'sgrad_vec') then
         fker => h3d_sgrad_vec
-     elseif (trim(ckername) .eq. 'dprime_diff') then
+     elseif (trim(trim_ast(ckername)) .eq. 'dprime_diff') then
         fker => h3d_dprime_diff
-     elseif (trim(ckername) .eq. 'slp_diff') then
+     elseif (trim(trim_ast(ckername)) .eq. 'slp_diff') then
         fker => h3d_slp_diff
-     elseif (trim(ckername) .eq. 'dlp_diff') then
+     elseif (trim(trim_ast(ckername)) .eq. 'dlp_diff') then
         fker => h3d_dlp_diff
-     elseif (trim(ckername) .eq. 'sprime_diff') then
+     elseif (trim(trim_ast(ckername)) .eq. 'sprime_diff') then
         fker => h3d_sprime_diff
      else
         info(1) = 2048
@@ -163,3 +174,23 @@ subroutine dgetnearquad_kernelmenu(npatches,norders, &
        nquad,wnear,linfo,info)
   
 end subroutine dgetnearquad_kernelmenu
+
+function trim_ast(input_str) result(output_str)
+  ! Explicitly defining 40 characters as requested
+  character(len=40), intent(in) :: input_str
+  character(len=40)             :: output_str
+  integer                       :: ast_pos
+  
+  ! INDEX finds the position of the first occurrence of '*'
+  ast_pos = index(input_str, '*')
+  
+  if (ast_pos > 0) then
+     ! If an asterisk is found, take the substring right up to it.
+     ! Fortran automatically pads the remaining characters with spaces.
+     output_str = input_str(1:ast_pos-1)
+  else
+     ! If no asterisk is found, return the original string.
+     output_str = input_str
+  end if
+  
+end function trim_ast

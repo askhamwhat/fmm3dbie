@@ -153,7 +153,7 @@ QOBJS = $(QUAD)/far_field_routs.o \
 	$(QUAD)/ggq-selfquad-routs.o $(QUAD)/ggq-quads-legacy-interfaces.o \
 	$(QUAD)/adap-quads.o \
 	$(QUAD)/near_field_routs.o $(QUAD)/near_quad_sub.o \
-	$(QUAD)/near_field_quads.o
+	$(QUAD)/near_field_quads.o $(QUAD)/near_field_quads_kernelmenu.o
 
 # Surface wrappers
 SURF = src/surface_routs

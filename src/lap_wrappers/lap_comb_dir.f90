@@ -196,7 +196,11 @@
       integer *8 :: ndtarg, ntarg
       integer *8, allocatable :: ipatch_id(:)
       real *8, allocatable :: uvs_targ(:,:)
-      integer *8 i
+      integer *8 i, ndsc, ndsv, isd, ndd, ndi, ndz, ipars
+      integer *8 :: liopts, iopts, info, linfo, ipv, nker, ldopts
+      real *8 :: dopts, t1, t2
+      complex *16 :: zpars
+      !$ real *8 :: omp_get_wtime
 
       ndtarg = 12
       ntarg = npts
@@ -213,10 +217,40 @@
       call get_patch_id_uvs(npatches, norders, ixyzs, iptype, npts, &
         ipatch_id, uvs_targ)
 
+      call cpu_time(t1)
+      !$ t1 = omp_get_wtime()
       call getnearquad_lap_comb_dir_eval(npatches, norders, &
         ixyzs, iptype, npts, srccoefs, srcvals, ndtarg, ntarg, &
         srcvals, ipatch_id, uvs_targ, eps, dpars, iquadtype, nnz, &
         row_ptr, col_ind, iquad, rfac0, nquad, wnear)
+      call cpu_time(t2)
+      !$ t2 = omp_get_wtime()
+
+      write(*,*) 'scalar build time ', t2-t1
+      
+      call cpu_time(t1)
+      !$ t1 = omp_get_wtime()
+      liopts = 0
+      ldopts = 0
+      linfo = 1
+      ndd = 2
+      ndi = 0
+      ndz = 0
+      nker = 1
+      ipv = 0
+      ndsc = 9
+      ndsv = 12
+      isd = 0
+      call dgetnearquad_kernelmenu(npatches,norders, &
+           ixyzs,iptype,npts,isd,ndsc,ndsv,srccoefs,srcvals, &
+           ndtarg,ntarg,srcvals,ipatch_id,uvs_targ,eps,ipv, &
+           'l3d*','comb*',nker,ndd,dpars,ndz,zpars,ndi,ipars, &
+           liopts,iopts,ldopts,dopts,nnz,row_ptr,col_ind,iquad, &
+           nquad,wnear,linfo,info)
+      call cpu_time(t2)
+      !$ t2 = omp_get_wtime()
+
+      write(*,*) 'vector (nker=1) build time ', t2-t1, info
       
       return
       end
