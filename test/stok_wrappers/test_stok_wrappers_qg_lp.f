@@ -113,9 +113,9 @@ c
       sigout(3) = .31d0
       
       do i=1,npts
-         call st3d_slp_vec(i9_8,xyz_out,i3_8,srcvals(1,i),i0_8,
+         call st3d_slp_vec(xyz_out,i3_8,srcvals(1,i),i0_8,
      1        dpars,i0_8,zpars,i0_8,ipars,smat)
-         call st3d_strac_vec(i9_8,xyz_out,i12_8,srcvals(1,i),i0_8,dpars,
+         call st3d_strac_vec(xyz_out,i12_8,srcvals(1,i),i0_8,dpars,
      1        i0_8,zpars,i0_8,ipars,stracmat)
          uval(1,i) = smat(1,1)*sigout(1) + smat(1,2)*sigout(2)
      1        + smat(1,3)*sigout(3)
@@ -137,7 +137,7 @@ c
       nin = 9
       
       do i = 1,nin
-         call st3d_slp_vec(i9_8,xyz_out,i3_8,xyz_in(1,i),i0_8,dpars,
+         call st3d_slp_vec(xyz_out,i3_8,xyz_in(1,i),i0_8,dpars,
      1        i0_8,zpars,i0_8,ipars,smat)
       
          uintest(1,i) = smat(1,1)*sigout(1) + smat(1,2)*sigout(2)
@@ -159,8 +159,8 @@ c
       uin(3) = 0
 
       do i = 1,npts
-         call st3d_dlp_vec(9,srcvals(1,i),3,xyz_in,0,dpars,0,zpars,
-     1        0,ipars,dmat)
+         call st3d_dlp_vec(srcvals(1,i),i3_8,xyz_in,i0_8,dpars,
+     1        i0_8,zpars,i0_8,ipars,dmat)
 
          u1 = -1d0
          u2 = -2d0
@@ -212,10 +212,10 @@ c
       du2(3) = 0
 
       do i = 1,npts
-         call st3d_slp_vec(i9_8,srcvals(1,i),i3_8,xyz_in,i0_8,dpars,
+         call st3d_slp_vec(srcvals(1,i),i3_8,xyz_in,i0_8,dpars,
      1        i0_8,zpars,i0_8,ipars,smat)
-         call st3d_dlp_vec(i9_8,srcvals(1,i),i3_8,xyz_in,i0_8,dpars,
-     1        i0_8,zpars, i0_8,ipars,dmat)
+         call st3d_dlp_vec(srcvals(1,i),i3_8,xyz_in,i0_8,dpars,
+     1        i0_8,zpars,i0_8,ipars,dmat)
 
          u1 = uval(1,i)
          u2 = uval(2,i)
