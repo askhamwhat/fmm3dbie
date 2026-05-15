@@ -3108,11 +3108,17 @@ c
 
       nfunev = 0
 
-      do i=1,ksigpols
-        do idim=1,nd
-          dvals(idim,i,1) = 0
+      if(nd.gt.1) then
+        do i=1,ksigpols
+          do idim=1,nd
+            dvals(idim,i,1) = 0
+          enddo
         enddo
-      enddo
+      else
+        do i=1,ksigpols
+          dvals(1,i,1) = 0
+        enddo
+      endif
 
       allocate(xkernvals(nd,npmax))
 
@@ -3125,22 +3131,35 @@ c
          do idim=1,nd
            xkernvals(idim,i) = fval(idim)*qwts(i)
          enddo
-         do j=1,ksigpols
-           do idim=1,nd
-             dvals(idim,j,1) = dvals(idim,j,1)+
-     1           xkernvals(idim,i)*sigvalsdens(j,i)
+
+         if (nd.gt.1) then
+           do j=1,ksigpols
+             do idim=1,nd
+               dvals(idim,j,1) = dvals(idim,j,1)+
+     1             xkernvals(idim,i)*sigvalsdens(j,i)
+             enddo
            enddo
-         enddo
+         else
+           do j=1,ksigpols
+             dvals(1,j,1) = dvals(1,j,1)+
+     1         xkernvals(1,i)*sigvalsdens(j,i)
+           enddo
+         endif
       enddo
 
       nfunev = nfunev + kpols
 
-      
-      do i=1,ksigpols
-        do idim=1,nd
-          dintall(idim,i) = dvals(idim,i,1)
+      if (nd.gt.1) then 
+        do i=1,ksigpols
+          do idim=1,nd
+            dintall(idim,i) = dvals(idim,i,1)
+          enddo
         enddo
-      enddo
+      else
+        do i=1,ksigpols
+          dintall(1,i) = dvals(1,i,1)
+        enddo
+      endif
 
       nproclist0 = 1
       istack(1) = 1
@@ -3283,71 +3302,120 @@ cc           compute xkernvals
 c
           itric1 = ichild_start(itri)
           istart = (itric1-1)*kpols
-          do j=1,kfine
-            jj=j+istart
-            call fker(srcvals(1,jj), ndtarg, xt, ndd, dpars,
-     1         ndz, zpars, ndi, ipars, fval)
-            do idim=1,nd
-              xkernvals(idim,jj) = fval(idim)*qwts(jj)
+          if (nd.ge.1) then
+            do j=1,kfine
+              jj=j+istart
+              call fker(srcvals(1,jj), ndtarg, xt, ndd, dpars,
+     1           ndz, zpars, ndi, ipars, fval)
+              do idim=1,nd
+                xkernvals(idim,jj) = fval(idim)*qwts(jj)
+              enddo
             enddo
-          enddo
-cc          call prin2('xkernvals=*',xkernvals(istart+1),kfine)
+          else
+            do j=1,kfine
+              jj=j+istart
+              call fker(srcvals(1,jj), ndtarg, xt, ndd, dpars,
+     1           ndz, zpars, ndi, ipars, fval)
+              xkernvals(1,jj) = fval(1)*qwts(jj)
+            enddo
+          endif
 
           nfunev = nfunev + kfine
 
 c
 cc         subtract contribution of current 
 c          triangle
-          do isig=1,ksigpols
-            do idim=1,nd
-              dintall(idim,isig) = dintall(idim,isig)-
-     1            dvals(idim,isig,itri)
-              dtmp(idim,isig) = 0
+
+          if(nd.gt.1) then
+            do isig=1,ksigpols
+              do idim=1,nd
+                dintall(idim,isig) = dintall(idim,isig)-
+     1              dvals(idim,isig,itri)
+                dtmp(idim,isig) = 0
+              enddo
             enddo
-          enddo
+          else
+            do isig=1,ksigpols
+              dintall(1,isig) = dintall(1,isig)-
+     1              dvals(1,isig,itri)
+              dtmp(1,isig) = 0
+            enddo
+          endif
 
 c
 cc        add in contributions of children triangles
 c
-          do itric=itric1,itric1+3
-            do isig=1,ksigpols
-              do idim=1,nd
-                dvals(idim,isig,itric) = 0
-              enddo
-            enddo
-
-            istart = (itric-1)*kpols
-            do k=1,kpols
-              ii = istart+k
+          if(nd.gt.1) then
+            do itric=itric1,itric1+3
               do isig=1,ksigpols
                 do idim=1,nd
-                  dvals(idim,isig,itric) = dvals(idim,isig,itric)+
-     1               xkernvals(idim,ii)*sigvalsdens(isig,ii)
+                  dvals(idim,isig,itric) = 0
+                enddo
+              enddo
+
+              istart = (itric-1)*kpols
+              do k=1,kpols
+                ii = istart+k
+                do isig=1,ksigpols
+                  do idim=1,nd
+                    dvals(idim,isig,itric) = dvals(idim,isig,itric)+
+     1                 xkernvals(idim,ii)*sigvalsdens(isig,ii)
+                  enddo
+                enddo
+              enddo
+              
+              do isig=1,ksigpols
+                do idim=1,nd
+                  dintall(idim,isig) = dintall(idim,isig) + 
+     1                dvals(idim,isig,itric)
+                  dtmp(idim,isig) = dtmp(idim,isig)+
+     1                dvals(idim,isig,itric)
                 enddo
               enddo
             enddo
+          else
+            do itric=itric1,itric1+3
+              do isig=1,ksigpols
+                dvals(1,isig,itric) = 0
+              enddo
+
+              istart = (itric-1)*kpols
+              do k=1,kpols
+                ii = istart+k
+                do isig=1,ksigpols
+                  dvals(1,isig,itric) = dvals(1,isig,itric)+
+     1               xkernvals(1,ii)*sigvalsdens(isig,ii)
+                enddo
+              enddo
               
-            do isig=1,ksigpols
-              do idim=1,nd
-                dintall(idim,isig) = dintall(idim,isig) + 
-     1              dvals(idim,isig,itric)
-                dtmp(idim,isig) = dtmp(idim,isig)+
-     1              dvals(idim,isig,itric)
+              do isig=1,ksigpols
+                dintall(1,isig) = dintall(1,isig) + 
+     1                dvals(1,isig,itric)
+                dtmp(1,isig) = dtmp(1,isig)+
+     1                dvals(1,isig,itric)
               enddo
             enddo
-          enddo
+          endif
 
 c
 cc        compare integral of children to integral of parent
 c         to determine if the children need to be refined further
 c
           errmax = 0
-          do isig=1,ksigpols
-            do idim=1,nd
-              if(abs(dtmp(idim,isig)-dvals(idim,isig,itri)).gt.errmax) 
-     1          errmax = abs(dtmp(idim,isig)-dvals(idim,isig,itri))
+
+          if (nd.ge.1) then
+            do isig=1,ksigpols
+              do idim=1,nd
+                if(abs(dtmp(idim,isig)-dvals(idim,isig,itri)).gt.errmax) 
+     1            errmax = abs(dtmp(idim,isig)-dvals(idim,isig,itri))
+              enddo
             enddo
-          enddo
+          else
+            do isig=1,ksigpols
+              if(abs(dtmp(1,isig)-dvals(1,isig,itri)).gt.errmax) 
+     1          errmax = abs(dtmp(1,isig)-dvals(1,isig,itri))
+            enddo
+          endif
 
           if(errmax.gt.eps) then
             idone = 0

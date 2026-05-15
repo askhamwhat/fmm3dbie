@@ -480,9 +480,8 @@ c
      1          svtmp_n,npols,dzero,sints_n,npols)
            call permute_12_3d(sints_n,svtmp_n,npols,nker,ntarg_n) 
          else
-           svtmp_n = sints_n
            call dgemm_guru('t','n',npols,ncols,npols,done,umatr,npols,
-     1          svtmp_n,npols,dzero,sints_n,npols)
+     1          sints_n,npols,dzero,svtmp_n,npols)
          endif
 c     
 c     fill out far part of layer potential
@@ -507,9 +506,8 @@ c
      1          svtmp_f,npols,dzero,sints_f,npols)
            call permute_12_3d(sints_f,svtmp_f,npols,nker,ntarg_f) 
          else
-           svtmp_f = sints_f
            call dgemm_guru('t','n',npols,ncols,npols,done,umatr,npols,
-     1          svtmp_f,npols,dzero,sints_f,npols)
+     1          sints_f,npols,dzero,svtmp_f,npols)
          endif
 c     
 c     combine svtmp_f, svtmp_n to fill out svtmp2
