@@ -377,7 +377,8 @@ c     this defines the notion of well-separated boxes for
 c     initial tree in istrat 1 or 3.
 c      
 c     TODO: consider tuning rfac based on nqorder,etc
-      rfac = 1.0d0      
+      rfac = 1.0d0     
+
       
 C$OMP PARALLEL DO DEFAULT(SHARED) SCHEDULE(DYNAMIC)
 C$OMP$PRIVATE(ipatch,ntarg2,xyztarg2,sints_n,sints_f,svtmp_n,svtmp_f)
@@ -386,7 +387,7 @@ C$OMP$PRIVATE(j,iii,istart,itarg2,iqstart,jpt,jtarg)
 C$OMP$PRIVATE(targ_near,targ_far,iind_near,iind_far,rr)
 C$OMP$PRIVATE(ntarg_f,ntarg_n,npols,norder)
 C$OMP$PRIVATE(uvs,umatr,vmatr,wts)
-C$OMP$PRIVATE(rsc,tmp,epsp,ipoly,ttype)
+C$OMP$PRIVATE(rsc,tmp,epsp,ipoly,ttype,ncols)
       do ipatch=1,npatches
 
          npols = ixyzs(ipatch+1)-ixyzs(ipatch)
@@ -470,11 +471,19 @@ c
      4        fker,nker,ndd,dpars,ndz,zpars,ndi,ipars,nqorderq,npmax,
      5        rfac,sints_n,ifmetric,rn1,n2)
 
-         call permute_12_3d(sints_n,svtmp_n,nker,npols,ntarg_n)
+
          ncols = nker*ntarg_n
-         call dgemm_guru('t','n',npols,ncols,npols,done,umatr,npols,
-     1        svtmp_n,npols,dzero,sints_n,npols)
-         call permute_12_3d(sints_n,svtmp_n,npols,nker,ntarg_n) 
+
+         if (nker.gt.1) then
+           call permute_12_3d(sints_n,svtmp_n,nker,npols,ntarg_n)
+           call dgemm_guru('t','n',npols,ncols,npols,done,umatr,npols,
+     1          svtmp_n,npols,dzero,sints_n,npols)
+           call permute_12_3d(sints_n,svtmp_n,npols,nker,ntarg_n) 
+         else
+           svtmp_n = sints_n
+           call dgemm_guru('t','n',npols,ncols,npols,done,umatr,npols,
+     1          svtmp_n,npols,dzero,sints_n,npols)
+         endif
 c     
 c     fill out far part of layer potential
 c     
@@ -490,11 +499,18 @@ c
      4        ndz,zpars,ndi,ipars,npts_f_quad,qnodes_quad,qwts_quad,
      5        sints_f)
 
-         call permute_12_3d(sints_f,svtmp_f,nker,npols,ntarg_f)
+
          ncols = nker*ntarg_f
-         call dgemm_guru('t','n',npols,ncols,npols,done,umatr,npols,
-     1        svtmp_f,npols,dzero,sints_f,npols)
-         call permute_12_3d(sints_f,svtmp_f,npols,nker,ntarg_f) 
+         if (nker.gt.1) then
+           call permute_12_3d(sints_f,svtmp_f,nker,npols,ntarg_f)
+           call dgemm_guru('t','n',npols,ncols,npols,done,umatr,npols,
+     1          svtmp_f,npols,dzero,sints_f,npols)
+           call permute_12_3d(sints_f,svtmp_f,npols,nker,ntarg_f) 
+         else
+           svtmp_f = sints_f
+           call dgemm_guru('t','n',npols,ncols,npols,done,umatr,npols,
+     1          svtmp_f,npols,dzero,sints_f,npols)
+         endif
 c     
 c     combine svtmp_f, svtmp_n to fill out svtmp2
 c     
