@@ -111,8 +111,10 @@ c
       sigout(1) = 1.1d0
       sigout(2) = -0.27d0
       sigout(3) = .31d0
+      nd = 9
       
       do i=1,npts
+
          call st3d_slp_vec(xyz_out,i3_8,srcvals(1,i),i0_8,
      1        dpars,i0_8,zpars,i0_8,ipars,smat)
          call st3d_strac_vec(xyz_out,i12_8,srcvals(1,i),i0_8,dpars,
@@ -210,6 +212,7 @@ c
       du2(1) = 0
       du2(2) = 0
       du2(3) = 0
+      nd = 9
 
       do i = 1,npts
          call st3d_slp_vec(srcvals(1,i),i3_8,xyz_in,i0_8,dpars,

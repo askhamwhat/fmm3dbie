@@ -140,7 +140,7 @@ EMOBJS = $(EM)/em_mfie_pec.o $(EM)/em_aumfie_pec.o \
 
 # Stokes wrappers
 STOK = src/stok_wrappers
-STOKOBJS = $(STOK)/stok_comb_vel.o 
+STOKOBJS = $(STOK)/stok_comb_vel.o $(STOK)/stok_s_mob.o
 
 # Kernels
 KER = src/kernels
@@ -508,6 +508,9 @@ python-gmsh: $(DYNAMICLIB)
 # housekeeping routines
 #
 clean: objclean
+ifneq ($(wildcard ./FMM3D/src/.*),)
+	$(MAKE) -C FMM3D clean
+endif
 	rm -f lib-static/*.a lib/*.so
 	rm -f .mod/*
 	rm -f test/common/int2-com

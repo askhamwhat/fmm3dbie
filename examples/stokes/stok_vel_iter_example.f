@@ -126,7 +126,7 @@ c
       sigout(3) = .31d0
       
       do i=1,npts
-         call st3d_slp_vec(int8_9,xyz_src,int8_3,srcvals(1,i),
+         call st3d_slp_vec(xyz_src,int8_3,srcvals(1,i),
      1        int8_0,dpars,int8_0,zpars,int8_0,ipars,smat)
          uval(1,i) = smat(1,1)*sigout(1) + smat(1,2)*sigout(2)
      1        + smat(1,3)*sigout(3)
@@ -138,7 +138,7 @@ c
 
 
 
-      call st3d_slp_vec(int8_9,xyz_src,int8_3,xyz_targ,int8_0,
+      call st3d_slp_vec(xyz_src,int8_3,xyz_targ,int8_0,
      1     dpars,int8_0,zpars,int8_0,ipars,smat)
       
        uintest(1) = smat(1,1)*sigout(1) + smat(1,2)*sigout(2)

@@ -195,13 +195,15 @@
 
       integer *8 :: ndtarg, ntarg
       integer *8, allocatable :: ipatch_id(:)
-      real *8, allocatable :: uvs_targ(:,:)
+      real *8, allocatable :: uvs_targ(:,:), wnear2(:)
       integer *8 i, ndsc, ndsv, isd, ndd, ndi, ndz, ipars
       integer *8 :: liopts, iopts, info, linfo, ipv, nker, ldopts
       real *8 :: dopts, t1, t2
       complex *16 :: zpars
       !$ real *8 :: omp_get_wtime
 
+
+      allocate(wnear2(nquad)) 
       ndtarg = 12
       ntarg = npts
       allocate(ipatch_id(npts), uvs_targ(2,npts))
@@ -217,6 +219,8 @@
       call get_patch_id_uvs(npatches, norders, ixyzs, iptype, npts, &
         ipatch_id, uvs_targ)
 
+      write(*,*) "calling kernel menu ..."
+      
       call cpu_time(t1)
       !$ t1 = omp_get_wtime()
       liopts = 0
@@ -245,7 +249,7 @@
       call getnearquad_lap_comb_dir_eval(npatches, norders, &
         ixyzs, iptype, npts, srccoefs, srcvals, ndtarg, ntarg, &
         srcvals, ipatch_id, uvs_targ, eps, dpars, iquadtype, nnz, &
-        row_ptr, col_ind, iquad, rfac0, nquad, wnear)
+        row_ptr, col_ind, iquad, rfac0, nquad, wnear2)
       call cpu_time(t2)
       !$ t2 = omp_get_wtime()
 

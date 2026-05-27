@@ -31,10 +31,11 @@ c
       
       subroutine dgetnearquad_guru(npatches,norders,
      1     ixyzs,iptype,npts,isd,ndsc,ndsv,srccoefs,srcvals,
-     2     ndtarg,ntarg,targvals,ipatch_id,uvs_targ,eps,ipv,
-     3     fker,nker,ndd,dpars,ndz,zpars,ndi,ipars,
-     4     liopts,iopts,ldopts,dopts,nnz,row_ptr,col_ind,iquad,
-     5     nquad,wnear,linfo,info)
+     2     ndtarg,ntarg,targvals,ipatch_id,uvs_targ,
+     3     ifcustomdens,nordersdens,ldrdens,idenstype,eps,ipv,
+     4     fker,nker,ndd,dpars,ndz,zpars,ndi,ipars,
+     5     liopts,iopts,ldopts,dopts,nnz,row_ptr,col_ind,iquad,
+     6     nquad,wnear,linfo,info)
 c
 c------------------------
 c  This subroutine generates the near field quadrature
@@ -112,7 +113,17 @@ c    - ipatch_id: integer *8(ntarg)
 c        patch id of target, patch_id = -1, if target off-surface
 c    - uvs_targ: double precision (2,ntarg)
 c        local uv coordinates on patch if target on surface
-c    - eps: double precision
+c    - ifcustomdens: integer *8 
+c        flag. ifcustomdens = 0, ignores the next three inputs
+c        ifcustomdens = 1, specify density basis type per patch
+c    - nordersdens: integer *8(npatches)
+c        nordersdens(i) is an integer parameter in the basis 
+c        for the density on patch i, usually the order of the basis 
+c    - ldrdens: integer *8(npatches+1)       
+c        ldrdens(i+1)-ldrdens(i) is the number of basis functions 
+c        on patch i. this determines the number of integrals 
+c        to be computed for this patch.
+c     - eps: double precision
 c        precision requested
 c    - ipv: integer *8
 c        Flag for choosing type of self-quadrature
@@ -204,6 +215,8 @@ c
       integer *8, intent(in) :: iquad(nnz+1)
       real *8, intent(out) :: wnear(nker,nquad)
       integer *8, intent(out) :: info(linfo)
+      integer *8, intent(in) :: ifcustomdens,nordersdens(npatches)
+      integer *8, intent(in) :: ldrdens(npatches+1),idenstype(npatches)
 
       integer *8 ntrimax
       real *8, allocatable :: cms(:,:),rads(:)
@@ -239,7 +252,7 @@ c
       integer *8 nnodes, istart, norder, npmax, npols
       integer *8 npts_f_quad, npts_f_tri, nquad_f, ntarg2, ntarg2m
       integer *8 ntarg_f, ntarg_n, ntest0, ntri_f, ier
-
+      integer *8 ndens
 
       external fker
 
@@ -369,7 +382,9 @@ c
       call gen_xg_unif_nodes_quad(nlev,nqorder_f,nnodes,npts_f_quad,
      1     qnodes_quad,qwts_quad)
 
-c     number of source patches to be processed per batch      
+c     number of source patches to be processed per batch
+c     ntest0 must be 1 now that we are allowing different bases
+c     per patch
       ntest0 = 1
       itargptr = 1
 
@@ -386,12 +401,19 @@ C$OMP$PRIVATE(ii,ii2,i,jpatch,svtmp2,iiif,l,ntarg2m)
 C$OMP$PRIVATE(j,iii,istart,itarg2,iqstart,jpt,jtarg)
 C$OMP$PRIVATE(targ_near,targ_far,iind_near,iind_far,rr)
 C$OMP$PRIVATE(ntarg_f,ntarg_n,npols,norder)
-C$OMP$PRIVATE(uvs,umatr,vmatr,wts)
+C$OMP$PRIVATE(uvs,umatr,vmatr,wts,ndens)
 C$OMP$PRIVATE(rsc,tmp,epsp,ipoly,ttype,ncols)
       do ipatch=1,npatches
 
          npols = ixyzs(ipatch+1)-ixyzs(ipatch)
          norder = norders(ipatch)
+         if (ifcustomdens .eq. 1) then
+            norderdens = nordersdens(ipatch)
+            ndens = ldrdens(ipatch+1)-ldrdens(ipatch)
+         else
+            norderdens = norder
+            ndens = npols
+         endif
 
          allocate(uvs(2,npols),umatr(npols,npols),vmatr(npols,npols))
          allocate(wts(npols))

@@ -50,7 +50,7 @@ c
       igeom = 'sphere'
       if (trim(igeom).eq.'sphere') then
         a = 1
-        na = 4
+        na = 3
         c0(1) = 0
         c0(2) = 0
         c0(3) = 0
