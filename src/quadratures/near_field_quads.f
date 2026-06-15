@@ -1,12 +1,9 @@
 c
 c     This file has the following user callable routines
 c
-c     ?getnearquad_guru - guru interface for computing near
+c     dgetnearquad_guru - guru interface for computing near
 c              field quadrature
 c        
-c         z - complex
-c         d - double precision
-c
 c     These routines handle:
 c     - selecting GGQ or adaptive for self interactions
 c     - vector-valued kernels
@@ -21,13 +18,11 @@ c     real-valued routine, setting nker = 2*nker0, where nker0
 c     is the size of the complex vector-valued kernel.
 c
 c     TODO:
-c     - implement vector-valued adaptive self 
 c     - timing experiments to find any places where scalar
 c     kernels suffer 
 c     - debug quadparams_adap. deal with large outlier orders?
-c     - chase through srccoefs 
 c     - point legacy routines here (after timing)
-c
+c     - implement custom density choices 
       
       subroutine dgetnearquad_guru(npatches,norders,
      1     ixyzs,iptype,npts,isd,ndsc,ndsv,srccoefs,srcvals,
@@ -113,7 +108,7 @@ c    - ipatch_id: integer *8(ntarg)
 c        patch id of target, patch_id = -1, if target off-surface
 c    - uvs_targ: double precision (2,ntarg)
 c        local uv coordinates on patch if target on surface
-c    - ifcustomdens: integer *8 
+c    - ifcustomdens: integer *8 (NOT YET SUPPORTED)
 c        flag. ifcustomdens = 0, ignores the next three inputs
 c        ifcustomdens = 1, specify density basis type per patch
 c    - nordersdens: integer *8(npatches)
@@ -123,7 +118,10 @@ c    - ldrdens: integer *8(npatches+1)
 c        ldrdens(i+1)-ldrdens(i) is the number of basis functions 
 c        on patch i. this determines the number of integrals 
 c        to be computed for this patch.
-c     - eps: double precision
+c    - idenstype: integer *8(npatches)
+c        idenstype(i) specifies the basis for the density on patch i
+c        the numbering convention is the same as iptype   
+c    - eps: double precision
 c        precision requested
 c    - ipv: integer *8
 c        Flag for choosing type of self-quadrature
@@ -218,15 +216,16 @@ c
       integer *8, intent(in) :: ifcustomdens,nordersdens(npatches)
       integer *8, intent(in) :: ldrdens(npatches+1),idenstype(npatches)
 
-      integer *8 ntrimax
+c
+c        temporary variables
+c
+
+      integer *8 ntrimax, norderdens
       real *8, allocatable :: cms(:,:),rads(:)
       real *8, allocatable :: targ_near(:,:),targ_far(:,:)
       integer *8, allocatable :: iind_near(:),iind_far(:)
       real *8, allocatable :: umatr(:,:),vmatr(:,:),uvs(:,:),wts(:)
 
-c
-c        temporary variables
-c
       integer *8, allocatable :: col_ptr(:),row_ind(:),iper(:)
       real *8, allocatable :: sints_n(:,:,:),svtmp_n(:,:,:)
       real *8, allocatable :: sints_f(:,:,:),svtmp_f(:,:,:)

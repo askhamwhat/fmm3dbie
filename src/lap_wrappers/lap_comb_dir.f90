@@ -198,6 +198,7 @@
       real *8, allocatable :: uvs_targ(:,:), wnear2(:)
       integer *8 i, ndsc, ndsv, isd, ndd, ndi, ndz, ipars
       integer *8 :: liopts, iopts, info, linfo, ipv, nker, ldopts
+      integer *8 :: ifcustomdens, nordersdens, ldrdens, idenstype
       real *8 :: dopts, t1, t2
       complex *16 :: zpars
       !$ real *8 :: omp_get_wtime
@@ -234,9 +235,12 @@
       ndsc = 9
       ndsv = 12
       isd = 0
+      ifcustomdens = 0
+      
       call dgetnearquad_kernelmenu(npatches,norders, &
            ixyzs,iptype,npts,isd,ndsc,ndsv,srccoefs,srcvals, &
-           ndtarg,ntarg,srcvals,ipatch_id,uvs_targ,eps,ipv, &
+           ndtarg,ntarg,srcvals,ipatch_id,uvs_targ,&
+           ifcustomdens,nordersdens,ldrdens,idenstype,eps,ipv, &
            'l3d*','comb*',nker,ndd,dpars,ndz,zpars,ndi,ipars, &
            liopts,iopts,ldopts,dopts,nnz,row_ptr,col_ind,iquad, &
            nquad,wnear,linfo,info)

@@ -365,6 +365,7 @@
 
       integer *8 i, ipv, j, ii, ijloc(2,6), nker, liopts, ldopts
       integer *8 iopts, info, linfo, isd, ndsc, ndsv
+      integer *8 ifcustomdens, nordersdens, ldrdens, idenstype
       real *8 dopts
 
       procedure (), pointer :: fker
@@ -414,9 +415,11 @@
         dopts = rfac0
         liopts = 0 ! all defaults 
         linfo = 1
+        ifcustomdens = 0
         call dgetnearquad_guru(npatches, norders, ixyzs, &
              iptype, npts, isd, ndsc, ndsv, srccoefs, srcvals, &
-             ndtarg, ntarg, targs, ipatch_id, uvs_targ, eps, ipv, &
+             ndtarg, ntarg, targs, ipatch_id, uvs_targ, &
+             ifcustomdens, nordersdens, ldrdens, idenstype, eps, ipv, &
              fker, nker, ndd, dpars, ndz, zpars, ndi, ipars, &
              liopts, iopts, ldopts, dopts, &
              nnz, row_ptr, col_ind, iquad, &

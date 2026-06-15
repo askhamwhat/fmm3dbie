@@ -31,7 +31,8 @@
 
 subroutine dgetnearquad_kernelmenu(npatches,norders, &
      ixyzs,iptype,npts,isd,ndsc,ndsv,srccoefs,srcvals, &
-     ndtarg,ntarg,targvals,ipatch_id,uvs_targ,eps,ipv, &
+     ndtarg,ntarg,targvals,ipatch_id,uvs_targ,&
+     ifcustomdens,nordersdens,ldrdens,idenstype,eps,ipv, &
      ckerfam,ckername,nker,ndd,dpars,ndz,zpars,ndi,ipars, &
      liopts,iopts,ldopts,dopts,nnz,row_ptr,col_ind,iquad, &
      nquad,wnear,linfo,info)
@@ -43,6 +44,8 @@ subroutine dgetnearquad_kernelmenu(npatches,norders, &
   integer *8, intent(in) :: npatches,norders(npatches),npts
   integer *8, intent(in) :: liopts, iopts(liopts)
   integer *8, intent(in) :: ldopts, nquad
+  integer *8, intent(in) :: ifcustomdens,nordersdens(npatches)
+  integer *8, intent(in) :: ldrdens(npatches+1),idenstype(npatches)
   real *8, intent(in) :: dopts(ldopts)
   integer *8, intent(in) :: ixyzs(npatches+1),iptype(npatches)
   real *8, intent(in) :: srccoefs(ndsc,npts),srcvals(ndsv,npts),eps
@@ -168,7 +171,8 @@ subroutine dgetnearquad_kernelmenu(npatches,norders, &
 
   call dgetnearquad_guru(npatches,norders, &
        ixyzs,iptype,npts,isd,ndsc,ndsv,srccoefs,srcvals, &
-       ndtarg,ntarg,targvals,ipatch_id,uvs_targ,eps,ipv, &
+       ndtarg,ntarg,targvals,ipatch_id,uvs_targ, &
+       ifcustomdens,nordersdens,ldrdens,idenstype,eps,ipv, &
        fker,nker,ndd,dpars,ndz,zpars,ndi,ipars, &
        liopts,iopts,ldopts,dopts,nnz,row_ptr,col_ind,iquad, &
        nquad,wnear,linfo,info)
