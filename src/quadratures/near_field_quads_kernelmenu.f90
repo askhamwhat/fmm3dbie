@@ -83,6 +83,9 @@ subroutine dgetnearquad_kernelmenu(npatches,norders, &
   external h3d_sgrad_vec, h3d_dprime_diff, h3d_slp_diff
   external h3d_dlp_diff, h3d_sprime_diff
 
+  ! helm 2d
+  external h2d_g
+
   info(1) = 0
 
   ! initialize the appropriate kernel function
@@ -159,6 +162,13 @@ subroutine dgetnearquad_kernelmenu(npatches,norders, &
         fker => h3d_dlp_diff
      elseif (trim(trim_ast(ckername)) .eq. 'sprime_diff') then
         fker => h3d_sprime_diff
+     else
+        info(1) = 2048
+     end if
+  elseif (trim(trim_ast(ckerfam)) .eq. 'h2d') then
+     ! Helmholtz 2D kernels 
+     if (trim(trim_ast(ckername)) .eq. 'g') then
+        fker => h2d_g
      else
         info(1) = 2048
      end if

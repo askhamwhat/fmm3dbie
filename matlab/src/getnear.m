@@ -122,3 +122,5 @@ function [rsc] = getnear(S, targinfo, rfac)
     rsc.rfac0 = rfac0;
 
 end
+%----------------------------------
+%

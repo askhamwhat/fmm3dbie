@@ -5785,3 +5785,174 @@ function [rsc] = getnear(S, targinfo, rfac)
     rsc.rfac0 = rfac0;
 
 end
+%----------------------------------
+%
+@ +surfer/get_quadrature_correction_fromfortran.m 
+function Q = get_quadrature_correction(S,targinfo,eps,kerfam,kername, ...
+	 nker,ifcomplex,ipv,ndd,dpars,ndz,zpars,ndi,ipars,opts)
+%
+%  surfer.get_quadrature_correction_fromfortran
+%    This subroutine returns the near quadrature correction
+%    for the selected kernel, with densities supported
+%    on the surface and targets given by targinfo,
+%    as a sparse matrix. the kernel may be vector valued.
+%
+%  Syntax
+%   Q = surfer.get_quadrature_correction_fromfortran(S,targinfo,eps,...
+%		kerfam,kername,nker,ifcomplex,ipv,ndd,dpars,ndz,zpars,...
+%		ndi,ipars,opts)
+%
+%
+%  Input arguments:
+%    * S: surfer object, see README.md in matlab for details
+%    * eps: precision requested
+%
+
+    [srcvals,srccoefs,norders,ixyzs,iptype,wts] = extract_arrays(S);
+    [ndsv,npts] = size(srcvals);
+    [ndsc,~] = size(srccoefs);
+    [npatches,~] = size(norders);
+    npatp1 = npatches+1;
+    npp1 = npatches+1;
+    n3 = 3;
+
+    if nargin < 8
+       error('surfer.get_quadrature_correction_fromfortran: must specify first 8 inputs');
+    end
+
+    if isempty(targinfo)
+       Q = [];
+       return;
+    end	
+
+    if nargin < 9
+      opts = [];
+    end
+
+    ff = 'rsc';
+    if(isfield(opts,'format'))
+       ff = opts.format;
+    end
+
+    if(~(strcmpi(ff,'rsc') || strcmpi(ff,'csc') || strcmpi(ff,'sparse')))
+       fprintf('invalid quadrature format, reverting to rsc format\n');
+       ff = 'rsc';
+    end
+
+    targs = extract_targ_array(targinfo); 
+    [ndtarg,ntarg] = size(targs);
+    ntargp1 = ntarg+1;
+    
+    if(isfield(targinfo,'patch_id') || isprop(targinfo,'patch_id'))
+      patch_id = targinfo.patch_id;
+    else
+      patch_id = zeros(ntarg,1);
+    end
+
+    if(isfield(targinfo,'uvs_targ') || isprop(targinfo,'uvs_targ'))
+      uvs_targ = targinfo.uvs_targ;
+    else
+      uvs_targ = zeros(2,ntarg);
+    end
+
+    if(length(patch_id)~=ntarg)
+      fprintf('Incorrect size of patch id in target info struct. Aborting! \n');
+    end
+
+    [n1,n2] = size(uvs_targ);
+    if(n1 ~=2 && n2 ~=ntarg)
+      fprintf('Incorrect size of uvs_targ array in targinfo struct. Aborting! \n');
+    end
+
+    iptype0 = iptype(1);
+    norder0 = norders(1);
+    rfac = 0.0;
+    rfac0 = 0.0;
+    # FORTRAN get_rfacs(int[1] norder0, int[1] iptype0, inout double[1] rfac, inout double[1] rfac0);
+    
+
+    cms = S.cms;
+    rads = S.rads; 
+
+    rad_near = rads*rfac;
+    nnz = 0;
+    # FORTRAN findnearmem(double[n3,npatches] cms,int[1] npatches,double[npatches] rad_near,int[1] ndtarg,double [ndtarg,ntarg] targs,int[1] ntarg,inout int[1] nnz);
+
+    row_ptr = zeros(ntarg+1,1);
+    col_ind = zeros(nnz,1);
+    ntp1 = ntarg+1;
+    nnzp1 = nnz+1;
+    # FORTRAN findnear(double[n3,npatches] cms,int[1] npatches,double[npatches] rad_near,int[1] ndtarg,double [ndtarg,ntarg] targs, int[1] ntarg,inout int[ntp1] row_ptr,inout int[nnz] col_ind); 
+
+    iquad = zeros(nnz+1,1);
+    # FORTRAN get_iquad_rsc(int[1] npatches,int[npp1] ixyzs,int[1] npts,int[1] nnz,int[ntp1] row_ptr,int[nnz] col_ind,inout int[nnzp1] iquad);
+
+    nquad = iquad(nnz+1)-1;
+    iquadtype = 1;
+    if(isfield(opts,'quadtype'))
+      if(strcmpi(opts.quadtype,'ggq'))
+         iquadtype = 1;
+      else
+        fprintf('Unsupported quadrature type, reverting to ggq\n');
+        iquadtype = 1;
+      end
+    end
+
+    % kernel menu specific stuff
+    % later will put custom options here 
+    ifcustomdens = 0;
+    nordersdens = 0;
+    ldrdens = 0;
+    idenstype = 0;
+    isd = 0;
+    ckerfam = ckerfam + '*';
+    ckername = ckername + '*';
+    liopts = 0
+    iopts = 0
+    ldopts = 0
+    dopts = 0.0
+    linfo = 1
+    info = 0
+    
+    nker1 = nker
+    if (ifcomplex)
+       nker1 = 2*nker;
+    end   
+    wnear = zeros(nker1,nquad);
+    
+    #FORTRAN dgetnearquad_kernelmenu(int[1] npatches, int[npatches] norders,int[npp1] ixyzs,int[npatches] iptype, int[1] npts,int[1] isd, int[1] ndsc, int[1] ndsv, double[ndsc,npts] srccoefs, double[ndsv,npts] srcvals, int[1] ndtarg,int[1] ntarg,double[ndtarg,ntarg] targs, int[ntarg] patch_id, double[2,ntarg] uvs_targ, int[1] ifcustomdens, int[1] nordersdens, int[1] ldrdens, int[1] idenstype, double[1] eps, int[1] ipv, char[40] ckerfam, char[40] ckername, int[1] nker1, int[1] ndd, double[ndd] dpars, int[1] ndz, dcomplex[ndz] zpars, int[1] ndi, int[ndi] ipars, int[1] liopts, int[liopts] iopts, int[1] ldopts, double[ldopts] dopts, int[1] nnz, int[ntp1] row_ptr,int[nnz] col_ind, int[nnzp1] iquad, int[1] nquad, double[nker1,nquad] wnear, int[1] linfo, int[linfo] info);
+
+    if(ifcomplex)
+	wnear = wnear(1:2:end,:) + 1i*wnear(2:2:end,:);
+    end   
+    
+    Q = [];
+    Q.targinfo = targinfo;
+    Q.ifcomplex = ifcomplex;
+    Q.kernel_order = ipv;
+    Q.rfac = rfac;
+    Q.nquad = nquad;
+    Q.format = ff;
+    
+    if(strcmpi(ff,'rsc'))
+        Q.iquad = iquad;
+        Q.wnear = wnear;
+        Q.row_ptr = row_ptr;
+        Q.col_ind = col_ind;
+    elseif(strcmpi(ff,'csc'))
+        col_ptr = zeros(npatches+1,1);
+        row_ind = zeros(nnz,1);
+        iper = zeros(nnz,1);
+        npatp1 = npatches+1;
+        # FORTRAN rsc_to_csc(int[1] npatches, int[1] ntarg, int[1] nnz, int[ntp1] row_ptr, int[nnz] col_ind, inout int[npatp1] col_ptr, inout int[nnz] row_ind, inout int[nnz] iper); 
+        Q.iquad = iquad;
+        Q.iper = iper;
+        Q.wnear = wnear;
+        Q.col_ptr = col_ptr;
+        Q.row_ind = row_ind;
+    else
+        spmat = conv_rsc_to_spmat(S,row_ptr,col_ind,wnear);
+        Q.spmat = spmat;
+    end
+    
+end
